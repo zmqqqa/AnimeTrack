@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from 'react';
-import type { EChartsOption, graphic } from 'echarts';
+import type { EChartsOption } from 'echarts';
 import ReactECharts from 'echarts-for-react';
 
 interface ChartItem {
@@ -40,7 +40,7 @@ export function YearBarChart({ data, height = 220 }: YearBarChartProps) {
         fontFamily: 'var(--font-body), sans-serif',
       },
       extraCssText: 'box-shadow: 0 18px 40px rgba(0,0,0,0.35); border-radius: 14px; padding: 10px 12px;',
-      formatter: (params: any) => {
+      formatter: (params: Record<string, unknown>[]) => {
         const item = params[0];
         return [
           `<div style="display:flex; align-items:center; gap:8px; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; color:#94a3b8;">`,
