@@ -15,6 +15,7 @@ export function useAnimeData(parsedHistory: ParsedWatchHistory[] = []) {
         if (cached) {
             setAnimeList(cached);
             setIsLoading(false);
+            return;
         }
 
         const load = async () => {

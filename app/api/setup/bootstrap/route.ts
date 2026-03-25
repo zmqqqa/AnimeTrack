@@ -136,6 +136,12 @@ export async function POST() {
     return NextResponse.json({ error: '当前环境禁止通过网页初始化数据库。' }, { status: 403 });
   }
 
+  // 防止已初始化的数据库被重复执行
+  const currentStatus = await getSetupStatus();
+  if (currentStatus.seeded && currentStatus.animeCount > 0) {
+    return NextResponse.json({ error: '数据库已初始化完成，不允许重复执行。如需重置请使用命令行工具。' }, { status: 409 });
+  }
+
   try {
     loadDatabaseEnv();
 

@@ -10,7 +10,7 @@ function RouteLoadingBarInner() {
 
   useEffect(() => {
     setLoading(true);
-    const timer = setTimeout(() => setLoading(false), 500);
+    const timer = setTimeout(() => setLoading(false), 150);
     return () => clearTimeout(timer);
   }, [pathname, searchParams]);
 

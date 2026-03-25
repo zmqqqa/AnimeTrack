@@ -1,6 +1,8 @@
 "use client";
 
+import { memo } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { CheckIcon, PlusIcon, EllipsisHorizontalIcon } from '@heroicons/react/24/outline';
 import type { AnimeCardItem, AnimeStatus } from '@/lib/anime-shared';
 import { statusLabels } from '@/lib/dashboard-types';
@@ -19,7 +21,7 @@ interface AnimeListViewProps {
   isAdmin?: boolean;
 }
 
-export default function AnimeListView({ items, onEdit, updateProgress, isAdmin = false }: AnimeListViewProps) {
+export default memo(function AnimeListView({ items, onEdit, updateProgress, isAdmin = false }: AnimeListViewProps) {
   return (
     <div className="space-y-2.5">
       {items.map((item) => {
@@ -32,13 +34,14 @@ export default function AnimeListView({ items, onEdit, updateProgress, isAdmin =
             className="group flex items-center gap-4 p-3 bg-[#121214] border border-white/5 rounded-2xl hover:border-white/10 transition-all duration-200"
           >
             {/* 封面缩略图 */}
-            <Link href={`/anime/${item.id}`} className="flex-shrink-0 w-14 h-[74px] rounded-xl overflow-hidden bg-zinc-900">
+            <Link href={`/anime/${item.id}`} className="flex-shrink-0 w-14 h-[74px] rounded-xl overflow-hidden bg-zinc-900 relative">
               {item.coverUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <Image
                   src={item.coverUrl}
                   alt={item.title}
-                  className="w-full h-full object-cover"
+                  fill
+                  sizes="56px"
+                  className="object-cover"
                   onError={(e) => {
                     const target = e.currentTarget;
                     target.style.display = 'none';
@@ -125,4 +128,4 @@ export default function AnimeListView({ items, onEdit, updateProgress, isAdmin =
       })}
     </div>
   );
-}
+});

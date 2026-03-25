@@ -1,15 +1,9 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from "next-auth/next";
-import { authOptions } from '@/lib/auth';
 import { deleteAnimeRecord, getAnimeRecord, updateAnimeRecord, AnimeRecord } from '@/lib/anime';
 import { buildVoiceActorAliases } from '@/lib/ai';
 import { normalizeStringArray } from '@/lib/anime-cast';
 import { addBatchWatchHistory, deleteWatchHistoryByAnime } from '@/lib/history';
 import { query } from '@/lib/db';
-
-type SessionUser = {
-  role?: string;
-};
+import { apiSuccess, apiError, requireAdmin } from '@/lib/api-response';
 
 function parseId(idParam: string) {
   const id = Number(idParam);
@@ -24,44 +18,40 @@ export async function GET(
   context: { params: { id: string } }
 ) {
   const id = parseId(context.params.id);
-  if (!id) return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+  if (!id) return apiError('Invalid ID', 400);
 
   const record = await getAnimeRecord(id);
-  if (!record) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (!record) return apiError('Not found', 404);
 
-  return NextResponse.json(record);
+  return apiSuccess(record);
 }
 
 export async function DELETE(
   _request: Request,
   context: { params: { id: string } }
 ) {
-  const session = await getServerSession(authOptions);
-  if ((session?.user as SessionUser | undefined)?.role !== 'admin') {
-    return NextResponse.json({ error: '只有管理员可以删除数据' }, { status: 403 });
-  }
+  const auth = await requireAdmin();
+  if (!auth.authorized) return auth.response;
 
   const id = parseId(context.params.id);
-  if (!id) return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+  if (!id) return apiError('Invalid ID', 400);
 
   await deleteAnimeRecord(id);
   // Also clean up history when anime is deleted
   await deleteWatchHistoryByAnime(id);
   
-  return NextResponse.json({ ok: true });
+  return apiSuccess({ ok: true });
 }
 
 export async function PATCH(
   request: Request,
   context: { params: { id: string } }
 ) {
-  const session = await getServerSession(authOptions);
-  if ((session?.user as SessionUser | undefined)?.role !== 'admin') {
-    return NextResponse.json({ error: '只有管理员可以修改数据' }, { status: 403 });
-  }
+  const auth = await requireAdmin();
+  if (!auth.authorized) return auth.response;
 
   const id = parseId(context.params.id);
-  if (!id) return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+  if (!id) return apiError('Invalid ID', 400);
 
   const before = await getAnimeRecord(id);
   const body = await request.json();
@@ -107,7 +97,7 @@ export async function PATCH(
   }
 
   const updated = await updateAnimeRecord(id, updateData);
-  if (!updated) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (!updated) return apiError('Not found', 404);
 
   if (before) {
     const delta = updated.progress - before.progress;
@@ -123,5 +113,5 @@ export async function PATCH(
     }
   }
 
-  return NextResponse.json({ ok: true, entry: updated });
+  return apiSuccess({ ok: true, entry: updated });
 }

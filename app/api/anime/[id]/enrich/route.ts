@@ -74,19 +74,31 @@ export async function POST(
   };
 
   const enriched = await enrichAnimeInput(baseInput, {
-    mode: 'fill-missing',
+    mode: 'create',
     originalUserTitle: record.title,
   });
 
   const patch: Partial<CreateAnimeDTO> = {};
   const metadataPatch = buildMetadataPatch(record, enriched, {
     fields: DEFAULT_METADATA_FIELDS,
+    force: true,
+    allowReplaceFilledCover: true,
     allowCastAliasAugment: true,
     allowIsFinishedUpgrade: true,
   }).patch;
 
   if (enriched.title && enriched.title !== record.title) {
     patch.title = enriched.title;
+  }
+
+  // 保护用户手动填写的字段，不被 AI 覆盖
+  const userFields: Array<keyof CreateAnimeDTO> = ['status', 'progress', 'notes', 'startDate', 'endDate'];
+  for (const field of userFields) {
+    delete metadataPatch[field];
+  }
+  // score 只在用户未设置时才补充
+  if (record.score !== undefined && record.score !== null) {
+    delete metadataPatch.score;
   }
 
   Object.assign(patch, metadataPatch);

@@ -25,12 +25,13 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
   const isAuthPage = pathname === '/login' || pathname === '/register';
 
   const isGuest = (session?.user as SessionUser | undefined)?.role === 'guest';
+  const isAdmin = (session?.user as SessionUser | undefined)?.role === 'admin';
   const userName = typeof session?.user?.name === 'string' ? session.user.name : '追番记录者';
 
-  const groupedMenuItems = (['主馆区', '分析馆'] as NavigationSection[])
+  const groupedMenuItems = (['主馆区', '分析馆', '管理区'] as NavigationSection[])
     .map((section) => ({
       section,
-      items: navigationItems.filter((item) => item.section === section),
+      items: navigationItems.filter((item) => item.section === section && (!item.adminOnly || isAdmin)),
     }))
     .filter((group) => group.items.length > 0);
 

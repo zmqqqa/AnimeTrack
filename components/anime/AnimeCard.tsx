@@ -1,7 +1,9 @@
 "use client";
 
+import { memo } from 'react';
 import Link from 'next/link';
-import { CheckIcon, PlusIcon, EllipsisHorizontalIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import Image from 'next/image';
+import { CheckIcon, PlusIcon, EllipsisHorizontalIcon } from '@heroicons/react/24/outline';
 import type { AnimeCardItem, AnimeStatus } from '@/lib/anime-shared';
 import { statusLabels } from '@/lib/dashboard-types';
 
@@ -29,7 +31,7 @@ function resolveRewatchTag(tags?: string[]): string | undefined {
     .find((tag) => /^([0-9]{1,3}|[一二两三四五六七八九十]+)刷$/i.test(tag));
 }
 
-export default function AnimeCard({ item, onEdit, updateProgress, isAdmin = false }: AnimeCardProps) {
+export default memo(function AnimeCard({ item, onEdit, updateProgress, isAdmin = false }: AnimeCardProps) {
   const isCompleted = item.status === 'completed';
   const progressPercent = item.totalEpisodes
     ? (item.progress / item.totalEpisodes) * 100
@@ -42,11 +44,12 @@ export default function AnimeCard({ item, onEdit, updateProgress, isAdmin = fals
       <div className="relative aspect-[3/4] overflow-hidden bg-zinc-900">
         <Link href={`/anime/${item.id}`} className="block h-full">
           {item.coverUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={item.coverUrl}
               alt={item.title}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 opacity-70 group-hover:opacity-100"
+              fill
+              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+              className="object-cover transition-transform duration-500 group-hover:scale-110 opacity-70 group-hover:opacity-100"
               onError={(e) => {
                 const target = e.currentTarget;
                 target.style.display = 'none';
@@ -168,4 +171,4 @@ export default function AnimeCard({ item, onEdit, updateProgress, isAdmin = fals
       </div>
     </div>
   );
-}
+});

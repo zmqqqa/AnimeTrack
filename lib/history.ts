@@ -82,3 +82,39 @@ export async function addBatchWatchHistory(animeId: number, animeTitle: string, 
 export async function deleteWatchHistoryByAnime(animeId: number): Promise<void> {
     await query('DELETE FROM watch_history WHERE animeId = ?', [animeId]);
 }
+
+export async function deleteWatchHistoryById(id: number): Promise<boolean> {
+    const result = await query<ResultSetHeader>('DELETE FROM watch_history WHERE id = ?', [id]);
+    return result.affectedRows > 0;
+}
+
+export async function deleteWatchHistoryBatch(ids: number[]): Promise<number> {
+    if (ids.length === 0) return 0;
+    const placeholders = ids.map(() => '?').join(', ');
+    const result = await query<ResultSetHeader>(`DELETE FROM watch_history WHERE id IN (${placeholders})`, ids);
+    return result.affectedRows;
+}
+
+export async function getWatchHistoryPaginated(page: number, pageSize: number, search?: string): Promise<{ records: WatchHistoryRecord[]; total: number }> {
+    const offset = (page - 1) * pageSize;
+    let countSql = 'SELECT COUNT(*) as total FROM watch_history';
+    let dataSql = 'SELECT id, animeId, animeTitle, episode, watchedAt FROM watch_history';
+    const params: unknown[] = [];
+
+    if (search) {
+        const where = ' WHERE animeTitle LIKE ?';
+        countSql += where;
+        dataSql += where;
+        params.push(`%${search}%`);
+    }
+
+    dataSql += ' ORDER BY watchedAt DESC LIMIT ? OFFSET ?';
+
+    const [countResult] = await query<(RowDataPacket & { total: number })[]>(countSql, params);
+    const rows = await query<WatchHistoryRow[]>(dataSql, [...params, String(pageSize), String(offset)]);
+
+    return {
+        records: rows.map(mapRowToHistory),
+        total: countResult.total,
+    };
+}

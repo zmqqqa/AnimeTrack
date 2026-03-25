@@ -29,12 +29,13 @@ export function useHistoryData() {
         if (cached) {
             setWatchHistory(cached);
             setIsLoading(false);
+            return;
         }
 
         const load = async () => {
             setIsRefreshing(true);
             try {
-                const res = await fetch('/api/history?days=370&limit=1500');
+                const res = await fetch('/api/history?days=370&limit=800');
                 const data = await res.json();
                 const entries = Array.isArray(data?.entries) ? data.entries : [];
                 setWatchHistory(entries);

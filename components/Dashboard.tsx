@@ -57,6 +57,7 @@ export default function Dashboard() {
             unit: '部',
             icon: TvIcon,
             color: 'text-emerald-300',
+            href: '/anime',
         },
         {
             label: '当前追番',
@@ -64,6 +65,7 @@ export default function Dashboard() {
             unit: '部',
             icon: FireIcon,
             color: 'text-amber-300',
+            href: '/anime?status=watching',
         },
         {
             label: '本周观看',
@@ -71,6 +73,7 @@ export default function Dashboard() {
             unit: '集',
             icon: ClockIcon,
             color: 'text-sky-300',
+            href: '/anime/timeline',
         },
         {
             label: '看番总时长',
@@ -80,13 +83,6 @@ export default function Dashboard() {
             color: 'text-cyan-300',
         },
     ];
-
-    const topRated = useMemo(() => {
-        return [...animeList]
-            .filter((anime) => typeof anime.score === 'number')
-            .sort((left, right) => (right.score ?? 0) - (left.score ?? 0))
-            .slice(0, 6);
-    }, [animeList]);
 
     const recentPremiered = useMemo(() => {
         return [...animeList]
@@ -295,36 +291,56 @@ export default function Dashboard() {
                 }
             >
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 relative z-10 cv-auto">
-                    {stats.map((stat, i) => (
-                        <div
-                            key={i}
-                            className="glass-panel px-5 py-5 rounded-[28px] transition-all duration-500 hover:-translate-y-1 group relative overflow-hidden flex flex-col gap-4 border-white/10"
-                            style={{ background: 'rgba(14, 21, 19, 0.88)' }}
-                        >
-                            {/* 背景装饰图标 */}
-                            <div className="absolute -bottom-3 -right-3 opacity-[0.06] group-hover:opacity-[0.14] transition-all duration-500 scale-150 group-hover:rotate-12 pointer-events-none">
-                                <stat.icon className={`w-20 h-20 ${stat.color}`} />
-                            </div>
+                    {stats.map((stat, i) => {
+                        const content = (
+                            <>
+                                {/* 背景装饰图标 */}
+                                <div className="absolute -bottom-3 -right-3 opacity-[0.06] group-hover:opacity-[0.14] transition-all duration-500 scale-150 group-hover:rotate-12 pointer-events-none">
+                                    <stat.icon className={`w-20 h-20 ${stat.color}`} />
+                                </div>
 
-                            <div className="flex items-start relative z-10">
-                                <div className={`flex items-center justify-center w-8 h-8 rounded-xl ${stat.color} bg-current/15 border border-current/20`}>
-                                    <stat.icon className="w-4 h-4" />
+                                <div className="flex items-start relative z-10">
+                                    <div className={`flex items-center justify-center w-8 h-8 rounded-xl ${stat.color} bg-current/15 border border-current/20`}>
+                                        <stat.icon className="w-4 h-4" />
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div className="relative z-10">
-                                <div className="flex items-baseline gap-1.5">
-                                    <span className="text-3xl font-bold tracking-tight text-white drop-shadow-sm">
-                                        {stat.value}
-                                    </span>
-                                    <span className="text-xs text-zinc-500 font-bold uppercase tracking-tighter">{stat.unit}</span>
+                                <div className="relative z-10">
+                                    <div className="flex items-baseline gap-1.5">
+                                        <span className="text-3xl font-bold tracking-tight text-white drop-shadow-sm">
+                                            {stat.value}
+                                        </span>
+                                        <span className="text-xs text-zinc-500 font-bold uppercase tracking-tighter">{stat.unit}</span>
+                                    </div>
+                                    <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.18em] mt-0.5 group-hover:text-zinc-400 transition-colors">
+                                        {stat.label}
+                                    </div>
                                 </div>
-                                <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.18em] mt-0.5 group-hover:text-zinc-400 transition-colors">
-                                    {stat.label}
-                                </div>
+                            </>
+                        );
+
+                        const className = "glass-panel px-5 py-5 rounded-[28px] transition-all duration-500 hover:-translate-y-1 group relative overflow-hidden flex flex-col gap-4 border-white/10";
+                        const style = { background: 'rgba(14, 21, 19, 0.88)' };
+
+                        return stat.href ? (
+                            <Link
+                                key={i}
+                                href={stat.href}
+                                className={className}
+                                style={style}
+                            >
+                                {content}
+                            </Link>
+                        ) : (
+                            <div
+                                key={i}
+                                className={className}
+                                style={style}
+                            >
+                                {content}
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </LazyRender>
 

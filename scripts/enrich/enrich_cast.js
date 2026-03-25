@@ -21,7 +21,10 @@
 
 const path = require('path');
 const mysql = require('mysql2/promise');
-const { createDbConfig, projectRoot } = require('../shared/db_env');
+const { createDbConfig, loadDatabaseEnv, projectRoot } = require('../shared/db_env');
+
+// 确保 .env.local 在 AI 配置读取之前加载
+loadDatabaseEnv();
 
 const providerSource = require(path.join(projectRoot, 'lib/metadata/provider-source.js'));
 const { fetchAnimeMetadataByQueriesDetailed } = providerSource;
@@ -43,7 +46,7 @@ function parseArgs(argv) {
     if (arg === '--force') { opts.force = true; continue; }
     if (arg === '--no-aliases') { opts.noAliases = true; continue; }
     if (arg.startsWith('--limit=')) { const n = Number(arg.slice(8)); if (n > 0) opts.limit = n; continue; }
-    if (arg.startsWith('--concurrency=')) { const n = Number(arg.slice(14)); if (n > 0) opts.concurrency = Math.min(n, 10); continue; }
+    if (arg.startsWith('--concurrency=')) { const n = Number(arg.slice(14)); if (n > 0) opts.concurrency = Math.min(n, 5); continue; }
     if (arg.startsWith('--ids=')) { opts.ids = arg.slice(6).split(',').map(Number).filter(n => n > 0); continue; }
   }
   return opts;
@@ -55,7 +58,7 @@ function printHelp() {
   --force             强制刷新已有 cast
   --limit=N           最多处理 N 条
   --ids=1,2,3         只处理指定 ID
-  --concurrency=3     并发数（默认 3，上限 10）
+  --concurrency=3     并发数（默认 3，上限 5）
   --no-aliases        跳过 AI 中文别名生成`);
 }
 
@@ -107,7 +110,7 @@ async function generateChineseAliases(castNames, apiKey) {
         },
       ],
       temperature: 0.1,
-      response_format: { type: 'json_object' },
+      ...(process.env.AI_JSON_FORMAT !== 'false' ? { response_format: { type: 'json_object' } } : {}),
     }),
   });
 

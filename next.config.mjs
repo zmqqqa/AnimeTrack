@@ -3,7 +3,9 @@ const nextConfig = {
   reactStrictMode: true,
   images: {
     remotePatterns: [
-      { protocol: 'https', hostname: '**' },
+      { protocol: 'https', hostname: 'lain.bgm.tv' },
+      { protocol: 'http', hostname: 'lain.bgm.tv' },
+      { protocol: 'https', hostname: 'cdn.myanimelist.net' },
     ],
   },
 };

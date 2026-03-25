@@ -105,7 +105,7 @@ function mapRowToAnimeRecord(row: AnimeRow): AnimeRecord {
 }
 
 function escapeLikePattern(value: string): string {
-  return value.replace(/[\\%_]/g, (char) => `\\${char}`);
+  return value.replace(/[!%_]/g, (char) => `!${char}`);
 }
 
 function normalizeComparableText(value: string | undefined): string {
@@ -236,7 +236,14 @@ function pickBestAnimeTitleCandidate(rows: AnimeRow[], queryTitle: string): Anim
   return ranked[0]?.row || null;
 }
 
-export async function listAnimeRecords(status?: AnimeStatus): Promise<AnimeRecord[]> {
+export interface ListAnimeOptions {
+  status?: AnimeStatus;
+  limit?: number;
+  offset?: number;
+}
+
+export async function listAnimeRecords(options: ListAnimeOptions = {}): Promise<AnimeRecord[]> {
+  const { status, limit, offset } = options;
   let sql = 'SELECT * FROM anime';
   const params: unknown[] = [];
   
@@ -247,11 +254,21 @@ export async function listAnimeRecords(status?: AnimeStatus): Promise<AnimeRecor
   
   sql += ' ORDER BY updatedAt DESC';
 
+  if (limit && limit > 0) {
+    sql += ' LIMIT ?';
+    params.push(String(limit));
+    if (offset && offset > 0) {
+      sql += ' OFFSET ?';
+      params.push(String(offset));
+    }
+  }
+
   const rows = await query<AnimeRow[]>(sql, params);
   return rows.map(mapRowToAnimeRecord);
 }
 
-export async function listAnimeRecordsWithLastWatched(status?: AnimeStatus): Promise<AnimeRecord[]> {
+export async function listAnimeRecordsWithLastWatched(options: ListAnimeOptions = {}): Promise<AnimeRecord[]> {
+  const { status, limit, offset } = options;
   let sql = `
     SELECT anime.*, latest_watch.lastWatchedAt
     FROM anime
@@ -270,8 +287,28 @@ export async function listAnimeRecordsWithLastWatched(status?: AnimeStatus): Pro
 
   sql += ' ORDER BY anime.updatedAt DESC';
 
+  if (limit && limit > 0) {
+    sql += ' LIMIT ?';
+    params.push(String(limit));
+    if (offset && offset > 0) {
+      sql += ' OFFSET ?';
+      params.push(String(offset));
+    }
+  }
+
   const rows = await query<AnimeRow[]>(sql, params);
   return rows.map(mapRowToAnimeRecord);
+}
+
+export async function countAnimeRecords(status?: AnimeStatus): Promise<number> {
+  let sql = 'SELECT COUNT(*) as count FROM anime';
+  const params: unknown[] = [];
+  if (status) {
+    sql += ' WHERE status = ?';
+    params.push(status);
+  }
+  const rows = await query<(RowDataPacket & { count: number })[]>(sql, params);
+  return Number(rows[0]?.count || 0);
 }
 
 export async function getAnimeRecord(id: number): Promise<AnimeRecord | null> {
@@ -388,10 +425,10 @@ export async function findAnimeByTitle(title: string): Promise<AnimeRecord | nul
       FROM anime
       WHERE title = ?
          OR original_title = ?
-         OR title LIKE ? ESCAPE '\\'
-         OR title LIKE ? ESCAPE '\\'
-         OR original_title LIKE ? ESCAPE '\\'
-         OR original_title LIKE ? ESCAPE '\\'
+         OR title LIKE ? ESCAPE '!'
+         OR title LIKE ? ESCAPE '!'
+         OR original_title LIKE ? ESCAPE '!'
+         OR original_title LIKE ? ESCAPE '!'
       LIMIT 50
     `,
     [normalizedTitle, normalizedTitle, `${escapedTitle}%`, `%${escapedTitle}%`, `${escapedTitle}%`, `%${escapedTitle}%`]

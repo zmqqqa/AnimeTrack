@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import Image from 'next/image';
 import { MagnifyingGlassIcon, TvIcon, TagIcon, SparklesIcon, FireIcon, Squares2X2Icon, ListBulletIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import AnimeHeader from '@/components/anime/AnimeHeader';
@@ -127,7 +128,7 @@ export default function AnimePageClient() {
   const loadItems = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/anime');
+      const res = await fetch(`/api/anime?_t=${Date.now()}`);
       if (res.ok) {
         const data = await res.json();
         setItems(Array.isArray(data) ? (data as AnimeListItem[]) : []);
@@ -150,6 +151,7 @@ export default function AnimePageClient() {
 
     const castFromUrl = searchParams.get('cast')?.trim();
     const tagFromUrl = searchParams.get('tag')?.trim();
+    const statusFromUrl = searchParams.get('status')?.trim();
 
     if (castFromUrl) {
       setCastQuery(castFromUrl);
@@ -157,6 +159,10 @@ export default function AnimePageClient() {
 
     if (tagFromUrl) {
       setTagFilter(tagFromUrl);
+    }
+
+    if (statusFromUrl && ['watching', 'completed', 'dropped', 'plan_to_watch'].includes(statusFromUrl)) {
+      setFilterStatus(statusFromUrl as AnimeStatus);
     }
 
     hasSyncedUrlFilters.current = true;
@@ -266,7 +272,7 @@ export default function AnimePageClient() {
     try {
       const res = await fetch(`/api/anime/${id}`, { method: 'DELETE' });
       if (res.ok) {
-        loadItems();
+        setItems(prev => prev.filter(item => item.id !== id));
         resetForm();
         toast.success('已删除');
       } else {
@@ -714,10 +720,9 @@ export default function AnimePageClient() {
                         onClick={() => isAdmin && startEdit(item)}
                         className={`flex items-center gap-3 p-2.5 -mx-2 rounded-xl transition-all ${isAdmin ? 'cursor-pointer hover:bg-white/5 hover:translate-x-1' : ''} group/item`}
                     >
-                        <div className="w-10 h-10 rounded-lg overflow-hidden bg-zinc-800 flex-shrink-0 border border-white/5 group-hover/item:border-blue-500/30 transition-colors shadow-lg">
+                        <div className="w-10 h-10 rounded-lg overflow-hidden bg-zinc-800 flex-shrink-0 border border-white/5 group-hover/item:border-blue-500/30 transition-colors shadow-lg relative">
                             {item.coverUrl ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                                <img src={item.coverUrl} className="w-full h-full object-cover transition-transform group-hover/item:scale-110" alt="" />
+                                <Image src={item.coverUrl} fill sizes="40px" className="object-cover transition-transform group-hover/item:scale-110" alt="" />
                             ) : (
                                 <div className="w-full h-full flex items-center justify-center text-[10px] text-zinc-600 uppercase">IMG</div>
                             )}

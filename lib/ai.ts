@@ -91,22 +91,6 @@ function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function hasHistoricalCue(text: string): boolean {
-  return /(以前|之前|很久前|早就|小时候|当年|曾经)/.test(text);
-}
-
-function hasExplicitDateCue(text: string): boolean {
-  return /(今天|昨天|前天|昨晚|今晚|刚刚|刚才|\d{4}[年\/-]\d{1,2}[月\/-]\d{1,2}|\d{1,2}[月\/-]\d{1,2})/.test(text);
-}
-
-function hasSeriesCompletedCue(text: string): boolean {
-  return /(都看完了|都补完了|全看完了|全部看完了|全补完了|全部补完了|看完了|补完了|追完了)/.test(text);
-}
-
-function hasEpisodeCompletionCue(text: string): boolean {
-  return /(看完了|补完了|追完了)\s*第\s*[0-9一二三四五六七八九十百零两〇]+\s*[集话話]/.test(text);
-}
-
 function expandInclusiveRange(start: number, end: number): number[] {
   if (!Number.isFinite(start) || !Number.isFinite(end) || start <= 0 || end <= 0) {
     return [];
@@ -183,31 +167,11 @@ function applyGlobalQuickRecordHints(inputText: string, batch: ParsedQuickRecord
     return batch;
   }
 
-  const historical = hasHistoricalCue(inputText);
-  const explicitDate = hasExplicitDateCue(inputText);
-  const seriesCompleted = hasSeriesCompletedCue(inputText);
-  const episodeCompletion = hasEpisodeCompletionCue(inputText);
-  const shouldForceCompleted = seriesCompleted && !episodeCompletion;
-
   const hintedRecords = batch.records.map((record) => {
     const next: ParsedQuickRecordIntent = {
       ...record,
       animeTitle: normalizeQuickRecordTitle(record.animeTitle, record.season, record.titleKind) || record.animeTitle,
     };
-
-    if (historical && next.isHistorical === undefined) {
-      next.isHistorical = true;
-    }
-
-    if (historical && !explicitDate) {
-      next.watchedAt = undefined;
-      next.startDate = undefined;
-      next.endDate = undefined;
-    }
-
-    if (shouldForceCompleted && (!next.status || next.status === 'watching')) {
-      next.status = 'completed';
-    }
 
     return next;
   });
@@ -397,6 +361,9 @@ async function requestAiJson<T>(messages: AiMessage[], temperature = 0.2): Promi
     return null;
   }
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30_000);
+
   try {
     const response = await fetch(AI_API_URL, {
       method: 'POST',
@@ -408,9 +375,10 @@ async function requestAiJson<T>(messages: AiMessage[], temperature = 0.2): Promi
         model: AI_MODEL,
         messages,
         temperature,
-        response_format: { type: 'json_object' },
+        ...(process.env.AI_JSON_FORMAT !== 'false' ? { response_format: { type: 'json_object' } } : {}),
       }),
       cache: 'no-store',
+      signal: controller.signal,
     });
 
     if (!response.ok) {
@@ -429,6 +397,8 @@ async function requestAiJson<T>(messages: AiMessage[], temperature = 0.2): Promi
   } catch (error) {
     console.error('AI request error:', error);
     return null;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
@@ -506,7 +476,7 @@ export async function parseQuickRecordBatch(inputText: string): Promise<ParsedQu
     [
       {
         role: 'system',
-        content: '你是动漫观看记录结构化助手，只输出 JSON，不输出解释。未知信息留空，不要编造。',
+        content: '你是动漫观看记录结构化助手，只输出 JSON，不输出解释。未知信息留空，不要编造。你的核心任务是精确理解用户自然语言中的观看意图，特别是判断用户是"看完了整部/整季"还是"只看了某几集"。',
       },
       {
         role: 'user',
@@ -544,7 +514,30 @@ export async function parseQuickRecordBatch(inputText: string): Promise<ParsedQu
   ]
 }
 
-规则：
+## 核心：观看状态判断
+
+status 字段是最重要的判断。请从用户的自然语言中推断观看意图：
+
+### status=completed（看完整部/整季）的识别信号：
+- 明确说完："看完了""看完的""补完了""追完了""刷完了""啃完了""撸完了""肝完了"
+- 过去式完成："看过""看过了""看过的""补过了""追过""补过"
+- 定语修饰形式："以前看完的XXX""之前追完的XXX""小时候看过的XXX"
+- 历史回忆语气："以前看的XXX""之前看的XXX""很久前看的XXX""小时候看的XXX"——当没有指定具体集数时，默认理解为看完整部
+- 批量录入式："以前看完了A、B、C""之前补了A和B"
+
+### status=watching（正在追/只看了部分）的识别信号：
+- 提到具体集数："看了第一集""追到第5集""看到第三集"
+- 正在进行："在看""在追""正在追""开始看了""刚开始看"
+- 只说"看了"而非"看完了"且提到了集数
+
+### 关键区分：
+- "看完了XXX" / "看完的XXX" → completed（整部看完）
+- "看完了XXX第3集" / "看完了第3集" → watching，episode=3（只看完单集）
+- "以前看的XXX" → completed（回忆性表述，没有集数说明已经看完）
+- "看了XXX第1集" → watching，episode=1（明确指定了集数）
+- "看了XXX" → 如果没有任何集数信息，且有"以前/之前"等时间线索 → completed；否则 → watching
+
+## 其他规则：
 1. 一句话里如果明确提到多部作品或多条记录，拆成多个 records。
 2. 如果出现“第一第二季 / 第一到第二季 / 第一、第二季”，必须拆成多个 seasons 对应的 records，不能只保留一个季。
 3. animeTitle 必须对应“具体动画条目”的标准中文名，不是原作总标题。
@@ -552,17 +545,20 @@ export async function parseQuickRecordBatch(inputText: string): Promise<ParsedQu
 5. 只有在无法确定该季官方中文副标题时，才使用“基础标题 第X季”；此时 titleKind=generic-season。
 6. season 可以填写，但不要因为填了 season 就把官方标题强行改成“第X季”。
 7. 只有用户明确提到的信息才填写；不知道就用 null、空字符串或空数组，不要补全设定。
-8. “看了第一集”可填写 episode=1、progress=1、status=watching。
-9. “看完了、补完了、全看完了”表示整季或整部看完时，填写 status=completed；但“看完了第一集”仍然是单集观看，不是 completed。
-10. “以前、之前、小时候、很久前、早就”这类表述，isHistorical=true；没给具体日期时 watchedAt、startDate、endDate 都留空。
-11. “二刷、三刷、重刷、重温、再刷”填到 rewatchTag。
-12. 不要凭常识生成简介、封面、声优、总集数、时长、标签；这些后续会再补全。
-13. 完全识别不出来时返回 {"records": []}。
+8. "以前、之前、小时候、很久前、早就"这类表述，isHistorical=true；没给具体日期时 watchedAt、startDate、endDate 都留空。
+9. "二刷、三刷、重刷、重温、再刷"填到 rewatchTag。
+10. 不要凭常识生成简介、封面、声优、总集数、时长、标签；这些后续会再补全。
+11. 完全识别不出来时返回 {"records": []}。
 
-示例：
-- “我以前看完了我心里危险的东西第一第二季，还有阴阳眼见子” 应拆成 3 条：我心里危险的东西 第一季、我心里危险的东西 第二季、看得见的女孩；三条都应 isHistorical=true 且 status=completed。
-- “我今天看了放学后海堤日记第一集” 只返回 1 条，status=watching，episode=1，progress=1。
-- “我以前看了南家三姐妹第二季” 应优先返回“南家三姐妹 再来一碗”，season=2，titleKind=official；只有不能确认官方季名时才退回“南家三姐妹 第二季”。`,
+## 示例：
+- "我以前看完了我心里危险的东西第一第二季，还有阴阳眼见子" → 3 条：我心里危险的东西 第一季（completed）、我心里危险的东西 第二季（completed）、看得见的女孩（completed）；三条都 isHistorical=true。
+- "我今天看了放学后海堤日记第一集" → 1 条，status=watching，episode=1，progress=1。
+- "我以前看了南家三姐妹第二季" → 优先返回"南家三姐妹 再来一碗"，season=2，titleKind=official，status=completed，isHistorical=true。
+- "以前看完的间谍过家家第二季" → 间谍过家家 第二季，status=completed，isHistorical=true。
+- "之前看过孤独摇滚" → 孤独摇滚！，status=completed，isHistorical=true。
+- "我昨天开始看葬送的芙莉莲" → 葬送的芙莉莲，status=watching，episode 留空。
+- "小时候看的名侦探柯南" → 名侦探柯南，status=completed，isHistorical=true。
+- "我看了3集无职转生" → 无职转生，status=watching，episode=3，progress=3。`,
       },
     ],
     0.1

@@ -5,6 +5,9 @@ import { fetchAnimeMetadataByQueries } from './anime-provider';
 import { uniqueStrings } from './anime-cast';
 import type { CreateAnimeDTO } from './anime';
 import metadataMergePolicy from './metadata/merge-policy.js';
+import {
+  toOptionalString, toOptionalNumber, toOptionalBoolean, toOptionalDateString, toStringArray,
+} from './ai-validation';
 
 type MetadataSourceInput = Partial<CreateAnimeDTO> & {
   description?: string;
@@ -46,6 +49,21 @@ function normalizeTitle(value: string | undefined | null): string | undefined {
   return normalized || undefined;
 }
 
+/** 清洗外部数据源（AI / Provider）返回值，防止脏数据入库 */
+function sanitizeExternalCandidate(raw: MetadataSourceInput): MetadataSourceInput {
+  return {
+    ...raw,
+    originalTitle: toOptionalString(raw.originalTitle)?.slice(0, 500),
+    totalEpisodes: toOptionalNumber(raw.totalEpisodes),
+    durationMinutes: toOptionalNumber(raw.durationMinutes),
+    summary: toOptionalString(raw.summary ?? raw.description ?? raw.synopsis)?.slice(0, 10000),
+    tags: toStringArray(raw.tags)?.map(t => t.slice(0, 100)).slice(0, 50),
+    premiereDate: toOptionalDateString(raw.premiereDate),
+    isFinished: toOptionalBoolean(raw.isFinished),
+    coverUrl: toOptionalString(raw.coverUrl)?.slice(0, 2000),
+  };
+}
+
 export async function enrichAnimeInput(input: CreateAnimeDTO, options: AnimeEnrichmentOptions = {}): Promise<CreateAnimeDTO> {
   const mode = options.mode || 'create';
   const originalUserTitle = (options.originalUserTitle || input.title || '').trim();
@@ -65,10 +83,11 @@ export async function enrichAnimeInput(input: CreateAnimeDTO, options: AnimeEnri
   let aiCandidate: MetadataSourceInput | null = null;
   let providerCandidate: MetadataSourceInput | null = null;
 
+  // ── 第一步：AI 先行，拿到标准官方中文名 + 原名 ──
   try {
     const enriched = await enrichAnimeData(originalUserTitle);
     if (enriched) {
-      aiCandidate = {
+      aiCandidate = sanitizeExternalCandidate({
         originalTitle: enriched.originalTitle,
         totalEpisodes: enriched.totalEpisodes,
         durationMinutes: enriched.durationMinutes,
@@ -77,7 +96,7 @@ export async function enrichAnimeInput(input: CreateAnimeDTO, options: AnimeEnri
         premiereDate: enriched.premiereDate,
         isFinished: enriched.isFinished,
         coverUrl: enriched.coverUrl,
-      };
+      });
 
       const officialTitle = normalizeTitle(enriched.officialTitle);
       if ((mode === 'create' || mode === 'fill-missing') && officialTitle) {
@@ -89,10 +108,16 @@ export async function enrichAnimeInput(input: CreateAnimeDTO, options: AnimeEnri
     console.error('AI enrichment failed:', error);
   }
 
+  // ── 第二步：Provider 用 AI 返回的原名搜索（精度更高）──
+  // 搜索优先级：原名（日文）> AI 标准化中文名 > 用户原始输入
+  const providerQueries = aiCandidate
+    ? [normalizeTitle(aiCandidate.originalTitle as string), data.title, originalUserTitle]
+    : [data.originalTitle, data.title, originalUserTitle];
+
   try {
-    const metadata = await fetchAnimeMetadataByQueries(data.originalTitle, data.title, originalUserTitle);
+    const metadata = await fetchAnimeMetadataByQueries(...providerQueries);
     if (metadata) {
-      providerCandidate = metadata;
+      providerCandidate = sanitizeExternalCandidate(metadata);
 
       const providerTitle = normalizeTitle(metadata.title);
       if ((mode === 'create' || mode === 'fill-missing') && providerTitle && providerTitle !== data.title) {

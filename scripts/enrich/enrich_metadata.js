@@ -26,7 +26,10 @@
 
 const path = require('path');
 const mysql = require('mysql2/promise');
-const { createDbConfig, projectRoot } = require('../shared/db_env');
+const { createDbConfig, loadDatabaseEnv, projectRoot } = require('../shared/db_env');
+
+// 确保 .env.local 在 AI 模块 require 之前加载
+loadDatabaseEnv();
 
 // 复用 lib 内的 provider-source 和 merge-policy（避免代码重复）
 const providerSource = require(path.join(projectRoot, 'lib/metadata/provider-source.js'));
@@ -51,7 +54,7 @@ function parseArgs(argv) {
     if (arg === '--ai-only') { opts.aiOnly = true; continue; }
     if (arg.startsWith('--fields=')) { opts.fields = arg.slice(9).split(',').map(s => s.trim()).filter(Boolean); continue; }
     if (arg.startsWith('--limit=')) { const n = Number(arg.slice(8)); if (n > 0) opts.limit = n; continue; }
-    if (arg.startsWith('--concurrency=')) { const n = Number(arg.slice(14)); if (n > 0) opts.concurrency = Math.min(n, 10); continue; }
+    if (arg.startsWith('--concurrency=')) { const n = Number(arg.slice(14)); if (n > 0) opts.concurrency = Math.min(n, 5); continue; }
     if (arg.startsWith('--ids=')) { opts.ids = arg.slice(6).split(',').map(Number).filter(n => n > 0); continue; }
   }
   return opts;
@@ -66,7 +69,7 @@ function printHelp() {
   --ai-only           仅用 AI，跳过 API
   --limit=N           最多处理 N 条
   --ids=1,2,3         只处理指定 ID
-  --concurrency=3     并发数（默认 3，上限 10）`);
+  --concurrency=3     并发数（默认 3，上限 5）`);
 }
 
 // ── 辅助 ──

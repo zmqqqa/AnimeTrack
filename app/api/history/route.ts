@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
 import { getWatchHistory, getWatchHistorySince } from '@/lib/history';
+import { apiSuccess } from '@/lib/api-response';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const limit = Number(searchParams.get('limit') ?? '2000'); // Default high limit for charts
+  const limit = Number(searchParams.get('limit') ?? '800');
   const days = Number(searchParams.get('days') ?? '');
   const safeLimit = Number.isFinite(limit) ? Math.min(Math.max(limit, 1), 10000) : 2000;
 
@@ -14,5 +14,5 @@ export async function GET(request: Request) {
   } else {
     entries = await getWatchHistory(safeLimit);
   }
-  return NextResponse.json({ ok: true, entries });
+  return apiSuccess({ ok: true, entries }, 200, { 'Cache-Control': 'private, max-age=30, stale-while-revalidate=60' });
 }

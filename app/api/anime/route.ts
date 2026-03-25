@@ -1,58 +1,59 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from "next-auth/next";
-import { authOptions } from '@/lib/auth';
+import { NextRequest } from 'next/server';
 import { listAnimeRecordsWithLastWatched, createAnimeRecord, CreateAnimeDTO, AnimeStatus } from '@/lib/anime';
 import { normalizeStringArray } from '@/lib/anime-cast';
 import { enrichAnimeInput } from '@/lib/anime-enrichment';
-
-type SessionUser = {
-  role?: string;
-};
+import { apiSuccess, apiError, requireAdmin } from '@/lib/api-response';
+import { createAnimeSchema } from '@/lib/validations';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const status = searchParams.get('status') as AnimeStatus | undefined;
+  const limit = Number(searchParams.get('limit') || '0');
+  const offset = Number(searchParams.get('offset') || '0');
   
   try {
-    const list = await listAnimeRecordsWithLastWatched(status);
-    return NextResponse.json(list);
+    const safeLimit = Number.isFinite(limit) && limit > 0 ? Math.min(limit, 5000) : undefined;
+    const safeOffset = Number.isFinite(offset) && offset > 0 ? offset : undefined;
+    const list = await listAnimeRecordsWithLastWatched({ status: status || undefined, limit: safeLimit, offset: safeOffset });
+    return apiSuccess(list, 200, { 'Cache-Control': 'private, max-age=60, stale-while-revalidate=120' });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : '读取失败';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return apiError(message);
   }
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if ((session?.user as SessionUser | undefined)?.role !== 'admin') {
-    return NextResponse.json({ error: '只有管理员可以添加数据' }, { status: 403 });
-  }
+  const auth = await requireAdmin();
+  if (!auth.authorized) return auth.response;
 
   try {
     const json = await request.json();
-    let data: CreateAnimeDTO = {
-        title: json.title,
-        originalTitle: json.originalTitle,
-        status: json.status || 'plan_to_watch',
-        progress: Number(json.progress) || 0,
-        coverUrl: json.coverUrl,
-        score: json.score,
-        totalEpisodes: json.totalEpisodes,
-        notes: json.notes,
-        durationMinutes: json.durationMinutes,
-        tags: normalizeStringArray(json.tags),
-        cast: normalizeStringArray(json.cast),
-        castAliases: normalizeStringArray(json.castAliases),
-        summary: json.summary,
-        startDate: json.startDate,
-        endDate: json.endDate,
-        premiereDate: json.premiereDate,
-        isFinished: typeof json.isFinished === 'boolean' ? json.isFinished : undefined
-    };
-
-    if (!data.title) {
-        return NextResponse.json({ error: 'Title is required' }, { status: 400 });
+    const parsed = createAnimeSchema.safeParse(json);
+    if (!parsed.success) {
+      const firstError = parsed.error.errors[0];
+      return apiError(firstError?.message || '参数校验失败', 400);
     }
+
+    const v = parsed.data;
+    let data: CreateAnimeDTO = {
+        title: v.title,
+        originalTitle: v.originalTitle || undefined,
+        status: v.status || 'plan_to_watch',
+        progress: v.progress || 0,
+        coverUrl: v.coverUrl || undefined,
+        score: v.score ?? undefined,
+        totalEpisodes: v.totalEpisodes ?? undefined,
+        notes: v.notes || undefined,
+        durationMinutes: v.durationMinutes ?? undefined,
+        tags: normalizeStringArray(v.tags),
+        cast: normalizeStringArray(v.cast),
+        castAliases: normalizeStringArray(v.castAliases),
+        summary: v.summary || undefined,
+        startDate: v.startDate || undefined,
+        endDate: v.endDate || undefined,
+        premiereDate: v.premiereDate || undefined,
+        isFinished: typeof v.isFinished === 'boolean' ? v.isFinished : undefined
+    };
 
     const originalUserTitle = data.title;
 
@@ -69,10 +70,10 @@ export async function POST(request: NextRequest) {
 
     const newRecord = await createAnimeRecord(data);
 
-    return NextResponse.json(newRecord);
+    return apiSuccess(newRecord);
   } catch (error: unknown) {
     console.error('Anime create error:', error);
     const message = error instanceof Error ? error.message : '创建失败';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return apiError(message);
   }
 }

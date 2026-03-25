@@ -1,11 +1,12 @@
 ﻿// 导航菜单项配置
-export type NavigationSection = '主馆区' | '分析馆';
+export type NavigationSection = '主馆区' | '分析馆' | '管理区';
 
 export interface NavigationItem {
   label: string;
   href: string;
   description: string;
   section: NavigationSection;
+  adminOnly?: boolean;
 }
 
 export const navigationItems: NavigationItem[] = [
@@ -38,6 +39,13 @@ export const navigationItems: NavigationItem[] = [
     href: '/anime/seasons',
     description: '首播档期与完结状态',
     section: '分析馆',
+  },
+  {
+    label: '数据管理',
+    href: '/admin',
+    description: '历史记录管理与维护',
+    section: '管理区',
+    adminOnly: true,
   },
 ];
 
