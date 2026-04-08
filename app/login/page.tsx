@@ -1,36 +1,53 @@
 "use client";
 
-import { signIn } from "next-auth/react";
-import { useState } from "react";
+import { signIn, useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from 'next/link';
 
-type LoginMode = 'account' | 'guest';
+function resolveCallbackUrl(rawValue: string | null) {
+  if (!rawValue || !rawValue.startsWith('/')) {
+    return '/';
+  }
+
+  return rawValue === '/register' ? '/' : rawValue;
+}
 
 export default function LoginPage() {
+  const { status } = useSession();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [loginMode, setLoginMode] = useState<LoginMode>('account');
+  const [callbackUrl, setCallbackUrl] = useState('/');
   const router = useRouter();
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    setCallbackUrl(resolveCallbackUrl(params.get('callbackUrl')));
+  }, []);
+
+  useEffect(() => {
+    if (status === 'authenticated') {
+      router.replace(callbackUrl);
+    }
+  }, [callbackUrl, router, status]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await handleLogin(username, password, 'account');
-  };
-
-  const handleLogin = async (u: string, p: string, mode: LoginMode) => {
     setError("");
     setIsSubmitting(true);
-    setLoginMode(mode);
 
     try {
       const res = await signIn("credentials", {
-        username: u,
-        password: p,
+        username,
+        password,
         redirect: false,
-        callbackUrl: "/",
+        callbackUrl,
       });
 
       if (res?.error) {
@@ -49,10 +66,6 @@ export default function LoginPage() {
     }
   };
 
-  const handleGuestLogin = async () => {
-    await handleLogin("guest", "guest", 'guest');
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#09090b] text-white">
       <div className="w-full max-w-md p-8 glass-panel-strong rounded-3xl shadow-2xl">
@@ -60,8 +73,8 @@ export default function LoginPage() {
           <div className="w-16 h-16 bg-purple-600 rounded-2xl mx-auto mb-4 flex items-center justify-center shadow-lg shadow-purple-500/20">
             <span className="text-2xl font-bold">A</span>
           </div>
-          <h1 className="text-2xl font-light tracking-tight">Anime Track</h1>
-          <p className="text-zinc-500 text-sm mt-2">登录后开始记录你的追番进度</p>
+          <h1 className="text-2xl font-light tracking-tight">管理员登录</h1>
+          <p className="text-zinc-500 text-sm mt-2">公开浏览默认可用，登录后才会显示编辑与管理功能</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6" aria-busy={isSubmitting}>
@@ -102,29 +115,14 @@ export default function LoginPage() {
             className="w-full py-3 bg-white text-black rounded-xl font-semibold hover:bg-zinc-200 transition-all shadow-lg shadow-white/5 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70"
           >
             <span className="flex items-center justify-center gap-2">
-              {isSubmitting && loginMode === 'account' && <span className="loading-spinner border-black/30 border-t-black" aria-hidden="true" />}
-              {isSubmitting && loginMode === 'account' ? '正在进入追番库...' : '进入追番库'}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleGuestLogin}
-            disabled={isSubmitting}
-            className="surface-pill w-full py-3 text-zinc-400 rounded-xl font-medium hover:bg-zinc-800 hover:text-white transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-70"
-          >
-            <span className="flex items-center justify-center gap-2">
-              {isSubmitting && loginMode === 'guest' && <span className="loading-spinner border-zinc-500/40 border-t-zinc-100" aria-hidden="true" />}
-              {isSubmitting && loginMode === 'guest' ? '正在以访客身份进入...' : '以访客身份进入'}
+              {isSubmitting && <span className="loading-spinner border-black/30 border-t-black" aria-hidden="true" />}
+              {isSubmitting ? '正在进入管理模式...' : '进入管理模式'}
             </span>
           </button>
 
           <div className="text-center mt-6">
             <p className="text-zinc-500 text-sm">
-              还没有账号？{" "}
-              <Link href="/register" className="text-purple-400 hover:text-purple-300">
-                立即注册
-              </Link>
+              这个入口不会在公开页面里展示，需要时请自行打开。
             </p>
             <p className="mt-3 text-zinc-500 text-sm">
               本地第一次启动？

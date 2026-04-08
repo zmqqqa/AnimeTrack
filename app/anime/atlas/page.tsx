@@ -44,52 +44,121 @@ type DistributionItem = {
   label: string;
   value: number;
   color: string;
+  percentage: number;
 };
 
-function AtlasRingChart({ data }: { data: DistributionItem[] }) {
-  const size = 208;
-  const strokeWidth = 24;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const total = data.reduce((sum, item) => sum + item.value, 0);
-  let offset = 0;
+type TagRow = {
+  tag: string;
+  count: number;
+  percentage: number;
+};
+
+function getRelativeBarWidth(value: number, maxValue: number) {
+  if (value <= 0 || maxValue <= 0) {
+    return '0%';
+  }
+
+  return `${(value / maxValue) * 100}%`;
+}
+
+function AtlasEpisodeBarList({ data }: { data: DistributionItem[] }) {
+  const maxValue = useMemo(() => data.reduce((max, item) => Math.max(max, item.value), 0), [data]);
+
+  if (!data.length) {
+    return (
+      <div className="surface-card-muted flex h-[220px] items-center justify-center rounded-[24px] text-sm text-zinc-500">
+        暂无总集数分布数据
+      </div>
+    );
+  }
 
   return (
-    <div className="relative flex h-[208px] w-[208px] items-center justify-center">
-      <svg width={size} height={size} className="-rotate-90 drop-shadow-[0_12px_28px_rgba(0,0,0,0.35)]">
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke="rgba(125, 145, 141, 0.16)"
-          strokeWidth={strokeWidth}
-          fill="none"
-        />
-        {data.map((item) => {
-          const dash = total > 0 ? (item.value / total) * circumference : 0;
-          const segment = (
-            <circle
-              key={item.label}
-              cx={size / 2}
-              cy={size / 2}
-              r={radius}
-              stroke={item.color}
-              strokeWidth={strokeWidth}
-              strokeDasharray={`${dash} ${circumference - dash}`}
-              strokeDashoffset={-offset}
-              fill="none"
-              strokeLinecap="round"
-            />
-          );
-          offset += dash;
-          return segment;
-        })}
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center rounded-full bg-[radial-gradient(circle,rgba(8,18,16,0.96),rgba(8,18,16,0.88)_58%,transparent_59%)] text-center">
-        <div className="text-[10px] uppercase tracking-[0.28em] text-zinc-500">片库构成</div>
-        <div className="mt-2 text-3xl font-mono text-zinc-100">{total}</div>
-        <div className="mt-1 text-xs text-zinc-500">有总集数记录的作品</div>
+    <div className="space-y-3">
+      {data.map((item, index) => (
+        <div key={item.label} className="surface-card-muted rounded-[24px] px-4 py-4 lg:px-5">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-5">
+            <div className="flex min-w-0 items-center gap-3 lg:w-[250px] lg:shrink-0">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/[0.04] text-xs font-mono text-zinc-400">
+                {index + 1}
+              </span>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: item.color }} />
+                  <span className="truncate text-sm text-zinc-100">{item.label}</span>
+                </div>
+                <div className="mt-1 text-xs text-zinc-500">{item.percentage}% · 共 {item.value} 部作品</div>
+              </div>
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="h-3 overflow-hidden rounded-full bg-white/[0.05]">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: getRelativeBarWidth(item.value, maxValue),
+                    backgroundColor: item.color,
+                    boxShadow: `0 0 18px ${item.color}33`,
+                  }}
+                />
+              </div>
+            </div>
+            <div className="flex items-end gap-2 lg:w-[92px] lg:shrink-0 lg:justify-end">
+              <span className="text-2xl font-mono text-zinc-100">{item.value}</span>
+              <span className="pb-1 text-xs text-zinc-500">部</span>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function AtlasTagBarList({ data }: { data: TagRow[] }) {
+  const maxValue = useMemo(() => data.reduce((max, item) => Math.max(max, item.count), 0), [data]);
+
+  if (!data.length) {
+    return (
+      <div className="surface-card-muted flex h-[280px] items-center justify-center rounded-[24px] text-sm text-zinc-500">
+        暂无标签排行数据
       </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {data.map((item, index) => (
+        <Link
+          key={item.tag}
+          href={`/anime?tag=${encodeURIComponent(item.tag)}`}
+          className="group block surface-card-muted rounded-[24px] px-4 py-4 transition-all duration-300 hover:border-cyan-300/25 hover:bg-white/[0.05] lg:px-5"
+        >
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-5">
+            <div className="flex min-w-0 items-center gap-3 lg:w-[250px] lg:shrink-0">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/[0.04] text-xs font-mono text-zinc-400">
+                {index + 1}
+              </span>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="truncate text-sm text-zinc-100">{item.tag}</span>
+                  <ArrowUpRightIcon className="h-3.5 w-3.5 shrink-0 text-zinc-600 transition-colors group-hover:text-cyan-300" />
+                </div>
+                <div className="mt-1 text-xs text-zinc-500">覆盖 {item.percentage}% · 点击筛选该标签</div>
+              </div>
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="h-3 overflow-hidden rounded-full bg-white/[0.05]">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-cyan-300 via-sky-300 to-emerald-300 transition-all duration-500"
+                  style={{ width: getRelativeBarWidth(item.count, maxValue) }}
+                />
+              </div>
+            </div>
+            <div className="flex items-end gap-2 lg:w-[92px] lg:shrink-0 lg:justify-end">
+              <span className="text-2xl font-mono text-zinc-100">{item.count}</span>
+              <span className="pb-1 text-xs text-zinc-500">部</span>
+            </div>
+          </div>
+        </Link>
+      ))}
     </div>
   );
 }
@@ -138,29 +207,44 @@ export default function AnimeAtlasPage() {
         )
       : 0;
 
+    const sortedEpisodeBuckets = Object.entries(episodeBucketCounts).sort((left, right) => {
+      const countDiff = right[1] - left[1];
+      if (countDiff !== 0) return countDiff;
+      return episodeBucketOrder[left[0]] - episodeBucketOrder[right[0]];
+    });
+
+    const episodeTotal = sortedEpisodeBuckets.reduce((sum, [, value]) => sum + value, 0);
+
     return {
       scored,
       premiered,
-      topEpisodeBuckets: Object.entries(episodeBucketCounts)
-        .sort((left, right) => episodeBucketOrder[left[0]] - episodeBucketOrder[right[0]])
-        .slice(0, 6),
       topVoiceActors: Object.entries(castCounts)
         .sort((left, right) => right[1] - left[1])
         .slice(0, 8),
-      episodeDistribution: Object.entries(episodeBucketCounts)
-        .sort((left, right) => episodeBucketOrder[left[0]] - episodeBucketOrder[right[0]])
+      episodeDistribution: sortedEpisodeBuckets
         .map(([label, value], index) => ({
           label,
           value,
           color: distributionColors[index % distributionColors.length],
+          percentage: episodeTotal ? Math.round((value / episodeTotal) * 100) : 0,
         })),
       metadataRichness,
     };
   }, [animeList]);
 
   const loading = animeLoading;
-  const tagRows = animeTagStats.slice(0, 10);
-  const tagMax = tagRows.reduce((max, item) => Math.max(max, item.count), 1);
+  const tagRows = useMemo<TagRow[]>(() => (
+    animeTagStats
+      .filter((item) => item.tag.trim().toLowerCase() !== 'tv')
+      .slice(0, 10)
+      .map((item) => ({
+        ...item,
+        percentage: animeList.length ? Math.round((item.count / animeList.length) * 100) : 0,
+      }))
+  ), [animeList.length, animeTagStats]);
+  const episodeTotal = data.episodeDistribution.reduce((sum, item) => sum + item.value, 0);
+  const dominantEpisodeBucket = data.episodeDistribution[0] ?? null;
+  const dominantTag = tagRows[0] ?? null;
 
   return (
     <main className="p-4 lg:p-8 pb-24 space-y-6 lg:space-y-8 animate-fade-in relative">
@@ -193,92 +277,79 @@ export default function AnimeAtlasPage() {
         </div>
       </section>
 
-      <section className="grid grid-cols-1 xl:grid-cols-12 gap-6 relative z-10">
-        <div className="xl:col-span-5 glass-panel rounded-[32px] p-6 lg:p-8">
-          <div className="flex items-center gap-3 mb-6">
-            <SparklesIcon className="w-5 h-5 text-emerald-300" />
-            <h2 className="text-xl font-display font-semibold text-zinc-100">集数分布</h2>
-          </div>
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[260px_minmax(0,1fr)] lg:items-center">
-            <div className="surface-card rounded-[30px] p-6 flex flex-col items-center justify-center gap-4">
-              <AtlasRingChart data={data.episodeDistribution} />
-              <div className="text-center text-sm leading-6 text-zinc-400">
-                按总集数区间看你的片库构成
+      <section className="relative z-10 space-y-6">
+        <div className="glass-panel rounded-[32px] p-6 lg:p-7">
+          <div className="flex flex-col gap-4 border-b border-white/6 pb-5 md:flex-row md:items-end md:justify-between">
+            <div className="flex items-center gap-3">
+              <SparklesIcon className="w-5 h-5 text-emerald-300" />
+              <div>
+                <h2 className="text-xl font-display font-semibold text-zinc-100">集数分布</h2>
+                <p className="mt-1 text-sm text-zinc-500">改为全宽横向条形图，直接比较各集数区间的体量差。</p>
               </div>
             </div>
-            <div className="space-y-3">
-              {data.topEpisodeBuckets.map(([name, count], index) => (
-                <div key={name} className="surface-card-muted rounded-[20px] px-4 py-3">
-                  <div className="flex items-center justify-between gap-3 text-sm text-zinc-300">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: distributionColors[index % distributionColors.length] }} />
-                      <span className="truncate">{name}</span>
-                    </div>
-                    <div className="shrink-0 text-right">
-                      <div className="text-zinc-400">{count} 部</div>
-                      <div className="mt-0.5 text-[11px] text-zinc-600">
-                        {data.episodeDistribution.length ? Math.round((count / Math.max(data.episodeDistribution.reduce((sum, item) => sum + item.value, 0), 1)) * 100) : 0}%
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/[0.04]">
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${(count / Math.max(data.topEpisodeBuckets.reduce((max, [, value]) => Math.max(max, value), 1), 1)) * 100}%`,
-                        background: `linear-gradient(90deg, ${distributionColors[index % distributionColors.length]}, rgba(255,255,255,0.92))`,
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-              {!data.topEpisodeBuckets.length && <div className="text-sm text-zinc-500">总集数字段还比较稀疏。</div>}
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-zinc-300">
+              <div>
+                <span className="text-zinc-500">已统计</span>
+                <span className="ml-2 font-mono text-zinc-100">{episodeTotal}</span>
+              </div>
+              <div>
+                <span className="text-zinc-500">最高区间</span>
+                <span className="ml-2 text-zinc-100">{dominantEpisodeBucket?.label ?? '暂无'}</span>
+              </div>
             </div>
+          </div>
+          <div className="mt-5">
+            <AtlasEpisodeBarList data={data.episodeDistribution} />
           </div>
         </div>
 
-        <div className="xl:col-span-7 glass-panel rounded-[32px] p-6 lg:p-8">
-          <div className="flex items-center gap-3 mb-6">
-            <TagIcon className="w-5 h-5 text-cyan-300" />
-            <h2 className="text-xl font-display font-semibold text-zinc-100">标签排行</h2>
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_260px] gap-6">
-            <div className="space-y-3">
-              {tagRows.map((tag) => (
-                <div key={tag.tag} className="surface-card-muted rounded-[22px] px-4 py-3">
-                  <div className="flex items-center justify-between gap-3 text-sm text-zinc-300">
-                    <span>{tag.tag}</span>
-                    <span className="text-zinc-500">{tag.count} 部</span>
-                  </div>
-                  <div className="mt-3 h-2 rounded-full bg-white/5 overflow-hidden">
-                    <div className="h-full rounded-full bg-gradient-to-r from-cyan-300 to-emerald-300" style={{ width: `${(tag.count / tagMax) * 100}%` }} />
-                  </div>
-                </div>
-              ))}
-              {!tagRows.length && <div className="text-sm text-zinc-500">标签数据还不够多，后续可以多用 AI 补全。</div>}
-            </div>
-            <div className="surface-card rounded-[28px] p-5 flex flex-col justify-between">
+        <div className="glass-panel rounded-[32px] p-6 lg:p-7">
+          <div className="flex flex-col gap-4 border-b border-white/6 pb-5 md:flex-row md:items-end md:justify-between">
+            <div className="flex items-center gap-3">
+              <TagIcon className="w-5 h-5 text-cyan-300" />
               <div>
-                <div className="text-[10px] uppercase tracking-[0.28em] text-zinc-500">标签摘要</div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {tagRows.slice(0, 6).map((tag) => (
-                    <span key={tag.tag} className="surface-pill rounded-full px-3 py-1.5 text-xs text-zinc-300">
-                      {tag.tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <div className="rounded-[24px] border border-cyan-300/15 bg-cyan-300/8 p-4">
-                <div className="flex items-center gap-2 text-cyan-100">
-                  <SparklesIcon className="w-4 h-4" />
-                  <span className="text-sm font-medium">AI 补全建议</span>
-                </div>
-                <p className="mt-2 text-sm text-zinc-300 leading-6">
-                  如果这里字段还偏空，可以继续走详情页 AI 补充，totalEpisodes、premiereDate、cast、summary 这些会让图谱更完整。
-                </p>
+                <h2 className="text-xl font-display font-semibold text-zinc-100">标签排行</h2>
+                <p className="mt-1 text-sm text-zinc-500">横向拉满主容器，每个标签都可以直接跳到番剧列表筛选。</p>
               </div>
             </div>
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-zinc-300">
+              <div>
+                <span className="text-zinc-500">展示范围</span>
+                <span className="ml-2 text-zinc-100">前 {tagRows.length} 标签</span>
+              </div>
+              <div>
+                <span className="text-zinc-500">已过滤</span>
+                <span className="ml-2 text-zinc-100">TV</span>
+              </div>
+              <div>
+                <span className="text-zinc-500">首位标签</span>
+                <span className="ml-2 text-zinc-100">{dominantTag?.tag ?? '暂无'}</span>
+              </div>
+              <Link
+                href={dominantTag ? `/anime?tag=${encodeURIComponent(dominantTag.tag)}` : '/anime'}
+                className="inline-flex items-center gap-1.5 text-cyan-200 transition-colors hover:text-cyan-100"
+              >
+                查看标签作品
+                <ArrowUpRightIcon className="h-4 w-4" />
+              </Link>
+            </div>
           </div>
+          <div className="mt-5">
+            <AtlasTagBarList data={tagRows} />
+          </div>
+          {tagRows.length > 0 && (
+            <div className="mt-5 flex flex-wrap gap-x-4 gap-y-2 text-sm">
+              {tagRows.map((tag) => (
+                <Link
+                  key={tag.tag}
+                  href={`/anime?tag=${encodeURIComponent(tag.tag)}`}
+                  className="text-zinc-400 transition-colors hover:text-cyan-200"
+                >
+                  #{tag.tag}
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

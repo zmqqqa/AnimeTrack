@@ -78,7 +78,6 @@ export function useAnimeData(parsedHistory: ParsedWatchHistory[] = []) {
         });
         return Object.entries(tagCounts)
             .sort((a, b) => b[1] - a[1])
-            .slice(0, 5)
             .map(([tag, count]) => ({ tag, count }));
     }, [animeList]);
 

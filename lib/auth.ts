@@ -13,9 +13,6 @@ interface AuthUserRow {
   role: string;
 }
 
-const guestUsername = process.env.GUEST_USERNAME?.trim();
-const guestPassword = process.env.GUEST_PASSWORD?.trim();
-
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -27,20 +24,6 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.username || !credentials?.password) {
           return null;
-        }
-
-        if (
-          guestUsername &&
-          guestPassword &&
-          credentials.username === guestUsername &&
-          credentials.password === guestPassword
-        ) {
-          return {
-            id: '999',
-            name: '访客朋友',
-            username: guestUsername,
-            role: 'guest',
-          };
         }
 
         const users = await query<AuthUserRow[]>(

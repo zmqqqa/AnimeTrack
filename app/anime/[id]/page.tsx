@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeftIcon, PencilSquareIcon, TrashIcon, CalendarIcon, CheckCircleIcon, ClockIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
@@ -9,7 +10,7 @@ import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import { normalizeStringArray } from '@/lib/anime-cast';
 import { fetchJson } from '@/lib/client-api';
 import { readSessionCache, writeSessionCache } from '@/lib/hooks-shared';
-import type { AnimeStatus, AnimeDetailItem } from '@/lib/anime-shared';
+import type { AnimeStatus, AnimeDetailItem, SessionUser } from '@/lib/anime-shared';
 
 const statusMap: Record<AnimeStatus, string> = {
   watching: '追番中',
@@ -161,8 +162,10 @@ function buildChangedPayload(formData: Partial<AnimeDetailItem>, item: AnimeDeta
 }
 
 export default function AnimeDetailPage({ params }: { params: { id: string } }) {
+  const { data: session } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const isAdmin = (session?.user as SessionUser | undefined)?.role === 'admin';
   const [item, setItem] = useState<AnimeDetailItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -171,6 +174,13 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
   const [isAiEnriching, setIsAiEnriching] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const returnTo = useMemo(() => resolveReturnTo(searchParams.get('returnTo')), [searchParams]);
+  const canEdit = isAdmin && isEditing;
+
+  useEffect(() => {
+    if (!isAdmin) {
+      setIsEditing(false);
+    }
+  }, [isAdmin]);
 
   const handleReturnToList = () => {
     router.push(returnTo, { scroll: false });
@@ -194,7 +204,7 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
   };
 
   const saveChanges = async () => {
-    if (!item) {
+    if (!item || !isAdmin) {
       return;
     }
 
@@ -225,6 +235,10 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
   };
 
   const enrichAnimeInfo = async () => {
+    if (!isAdmin) {
+      return;
+    }
+
     setIsAiEnriching(true);
     try {
       const response = await fetchJson<AnimeMutationResponse>(`/api/anime/${params.id}/enrich`, { method: 'POST' }, 'AI补充失败');
@@ -249,6 +263,10 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
   };
 
   const deleteAnime = async () => {
+    if (!isAdmin) {
+      return;
+    }
+
     setShowDeleteConfirm(true);
   };
 
@@ -334,7 +352,7 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
               </div>
 
               <div className="surface-card rounded-[24px] p-5 2xl:p-6 backdrop-blur-xl">
-                {isEditing ? (
+                {canEdit ? (
                   <div className="space-y-4">
                     <div>
                       <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500">状态</label>
@@ -402,7 +420,7 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
               <div className="surface-card rounded-[28px] p-6 md:p-8 xl:p-9 2xl:p-10 backdrop-blur-xl">
                 <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
                   <div className="min-w-0 flex-1 space-y-3">
-                    {isEditing ? (
+                    {canEdit ? (
                       <input
                         value={formData.title || ''}
                         onChange={(event) => handleChange('title', event.target.value)}
@@ -412,7 +430,7 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
                       <h1 className="text-3xl font-semibold tracking-tight text-white md:text-[2.5rem]">{item.title}</h1>
                     )}
 
-                    {isEditing ? (
+                    {canEdit ? (
                       <input
                         value={formData.originalTitle || ''}
                         placeholder="原名 / 日文名"
@@ -423,7 +441,7 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
                       item.originalTitle && <p className="text-lg text-zinc-400">{item.originalTitle}</p>
                     )}
 
-                    {isEditing ? (
+                    {canEdit ? (
                       <input
                         value={toTagInputValue(formData.tags)}
                         onChange={(event) => handleChange('tags', event.target.value)}
@@ -442,43 +460,47 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
                   </div>
 
                   <div className="flex shrink-0 flex-wrap gap-2 md:justify-end">
-                    {isEditing ? (
+                    {isAdmin ? (
                       <>
-                        <button
-                          onClick={enrichAnimeInfo}
-                          disabled={isAiEnriching}
-                          className="surface-pill rounded-xl px-4 py-2.5 text-sm text-zinc-200 transition hover:bg-zinc-800 disabled:opacity-50"
-                        >
-                          {isAiEnriching ? 'AI补充中...' : 'AI补充'}
-                        </button>
-                        <button onClick={() => setIsEditing(false)} className="rounded-xl px-4 py-2.5 text-sm text-zinc-400 transition hover:bg-zinc-900/80 hover:text-white">
-                          取消
-                        </button>
-                        <button
-                          onClick={saveChanges}
-                          disabled={saving}
-                          className="rounded-xl bg-emerald-400 px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-emerald-300 disabled:opacity-50"
-                        >
-                          {saving ? '保存中...' : '保存更改'}
-                        </button>
+                        {canEdit ? (
+                          <>
+                            <button
+                              onClick={enrichAnimeInfo}
+                              disabled={isAiEnriching}
+                              className="surface-pill rounded-xl px-4 py-2.5 text-sm text-zinc-200 transition hover:bg-zinc-800 disabled:opacity-50"
+                            >
+                              {isAiEnriching ? 'AI补充中...' : 'AI补充'}
+                            </button>
+                            <button onClick={() => setIsEditing(false)} className="rounded-xl px-4 py-2.5 text-sm text-zinc-400 transition hover:bg-zinc-900/80 hover:text-white">
+                              取消
+                            </button>
+                            <button
+                              onClick={saveChanges}
+                              disabled={saving}
+                              className="rounded-xl bg-emerald-400 px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-emerald-300 disabled:opacity-50"
+                            >
+                              {saving ? '保存中...' : '保存更改'}
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={enrichAnimeInfo}
+                              disabled={isAiEnriching}
+                              className="surface-pill rounded-xl px-4 py-2.5 text-sm text-zinc-200 transition hover:bg-zinc-800 disabled:opacity-50"
+                            >
+                              {isAiEnriching ? 'AI补充中...' : 'AI补充'}
+                            </button>
+                            <button
+                              onClick={() => setIsEditing(true)}
+                              className="surface-pill rounded-xl p-2.5 text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
+                            >
+                              <PencilSquareIcon className="h-5 w-5" />
+                            </button>
+                          </>
+                        )}
                       </>
-                    ) : (
-                      <>
-                        <button
-                          onClick={enrichAnimeInfo}
-                          disabled={isAiEnriching}
-                          className="surface-pill rounded-xl px-4 py-2.5 text-sm text-zinc-200 transition hover:bg-zinc-800 disabled:opacity-50"
-                        >
-                          {isAiEnriching ? 'AI补充中...' : 'AI补充'}
-                        </button>
-                        <button
-                          onClick={() => setIsEditing(true)}
-                          className="surface-pill rounded-xl p-2.5 text-zinc-300 transition hover:bg-white/[0.08] hover:text-white"
-                        >
-                          <PencilSquareIcon className="h-5 w-5" />
-                        </button>
-                      </>
-                    )}
+                    ) : null}
                   </div>
                 </div>
 
@@ -510,7 +532,7 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
                         观看进度
                       </h3>
                       <span className="font-mono text-sm text-zinc-300">
-                        {isEditing ? (
+                        {canEdit ? (
                           <div className="flex items-center gap-2">
                             <input
                               type="number"
@@ -568,7 +590,7 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
                       <SparklesIcon className="h-4 w-4" />
                       简介 / 剧情
                     </div>
-                    {isEditing ? (
+                    {canEdit ? (
                       <textarea
                         rows={8}
                         value={formData.summary || ''}
@@ -587,7 +609,7 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
                       <ClockIcon className="h-4 w-4" />
                       个人备注
                     </div>
-                    {isEditing ? (
+                    {canEdit ? (
                       <textarea
                         rows={4}
                         value={formData.notes || ''}
@@ -612,7 +634,7 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
                     <div className="mt-4 space-y-3 text-sm">
                       <div className="surface-card-muted flex items-center justify-between gap-4 rounded-2xl px-4 py-3">
                         <span className="text-zinc-500">开始观看</span>
-                        {isEditing ? (
+                        {canEdit ? (
                           <input
                             type="date"
                             value={formData.startDate || ''}
@@ -626,7 +648,7 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
 
                       <div className="surface-card-muted flex items-center justify-between gap-4 rounded-2xl px-4 py-3">
                         <span className="text-zinc-500">看完日期</span>
-                        {isEditing ? (
+                        {canEdit ? (
                           <input
                             type="date"
                             value={formData.endDate || ''}
@@ -640,7 +662,7 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
 
                       <div className="surface-card-muted flex items-center justify-between gap-4 rounded-2xl px-4 py-3">
                         <span className="text-zinc-500">首播日期</span>
-                        {isEditing ? (
+                        {canEdit ? (
                           <input
                             type="date"
                             value={formData.premiereDate || ''}
@@ -654,7 +676,7 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
 
                       <div className="surface-card-muted flex items-center justify-between gap-4 rounded-2xl px-4 py-3">
                         <span className="text-zinc-500">放送状态</span>
-                        {isEditing ? (
+                        {canEdit ? (
                           <label className="flex items-center gap-2 text-sm text-zinc-200">
                             <input
                               type="checkbox"
@@ -677,12 +699,12 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
                         <SparklesIcon className="h-4 w-4" />
                         声优阵容
                       </div>
-                      {!isEditing && item.cast && item.cast.length > 0 && (
+                      {!canEdit && item.cast && item.cast.length > 0 && (
                         <span className="text-xs text-zinc-500">{item.cast.length} 名</span>
                       )}
                     </div>
 
-                    {isEditing ? (
+                    {canEdit ? (
                       <textarea
                         rows={5}
                         value={Array.isArray(formData.cast) ? formData.cast.join(', ') : (formData.cast || '')}
@@ -711,7 +733,7 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
                 </div>
               </div>
 
-              {isEditing && (
+              {canEdit && (
                 <div className="rounded-[24px] border border-rose-400/20 bg-rose-400/5 p-5 backdrop-blur-xl">
                   <button onClick={deleteAnime} className="flex items-center gap-2 text-sm text-rose-300 transition hover:text-rose-200">
                     <TrashIcon className="h-4 w-4" />

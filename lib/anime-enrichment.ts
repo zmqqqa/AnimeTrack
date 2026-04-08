@@ -38,6 +38,8 @@ export type AnimeEnrichmentMode = 'create' | 'fill-missing';
 export interface AnimeEnrichmentOptions {
   mode?: AnimeEnrichmentMode;
   originalUserTitle?: string;
+  skipVoiceActorAliases?: boolean;
+  providerQueryLimit?: number;
 }
 
 function normalizeTitle(value: string | undefined | null): string | undefined {
@@ -67,6 +69,7 @@ function sanitizeExternalCandidate(raw: MetadataSourceInput): MetadataSourceInpu
 export async function enrichAnimeInput(input: CreateAnimeDTO, options: AnimeEnrichmentOptions = {}): Promise<CreateAnimeDTO> {
   const mode = options.mode || 'create';
   const originalUserTitle = (options.originalUserTitle || input.title || '').trim();
+  const providerQueryLimit = Math.max(1, options.providerQueryLimit ?? 3);
 
   let data: CreateAnimeDTO = {
     ...input,
@@ -110,9 +113,13 @@ export async function enrichAnimeInput(input: CreateAnimeDTO, options: AnimeEnri
 
   // ── 第二步：Provider 用 AI 返回的原名搜索（精度更高）──
   // 搜索优先级：原名（日文）> AI 标准化中文名 > 用户原始输入
-  const providerQueries = aiCandidate
-    ? [normalizeTitle(aiCandidate.originalTitle as string), data.title, originalUserTitle]
-    : [data.originalTitle, data.title, originalUserTitle];
+  const providerQueries = Array.from(new Set(
+    (aiCandidate
+      ? [normalizeTitle(aiCandidate.originalTitle as string), data.title, originalUserTitle]
+      : [data.originalTitle, data.title, originalUserTitle])
+      .map((item) => normalizeTitle(item))
+      .filter((item): item is string => Boolean(item))
+  )).slice(0, providerQueryLimit);
 
   try {
     const metadata = await fetchAnimeMetadataByQueries(...providerQueries);
@@ -137,13 +144,15 @@ export async function enrichAnimeInput(input: CreateAnimeDTO, options: AnimeEnri
     allowIsFinishedUpgrade: true,
   }).data;
 
-  if (Array.isArray(data.cast) && data.cast.length > 0) {
+  if (!options.skipVoiceActorAliases && Array.isArray(data.cast) && data.cast.length > 0) {
     try {
       data.castAliases = await buildVoiceActorAliases(data.cast, data.castAliases || []);
     } catch (error) {
       console.error('Voice actor alias generation failed:', error);
       data.castAliases = uniqueStrings([...(data.castAliases || []), ...data.cast]);
     }
+  } else if (Array.isArray(data.cast) && data.cast.length > 0) {
+    data.castAliases = uniqueStrings([...(data.castAliases || []), ...data.cast]);
   }
 
   return data;

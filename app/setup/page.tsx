@@ -43,8 +43,6 @@ export default function SetupPage() {
     'MYSQL_DATABASE=anime_track',
     'NEXTAUTH_URL=http://localhost:3000',
     'NEXTAUTH_SECRET=replace_with_a_random_string',
-    'GUEST_USERNAME=guest',
-    'GUEST_PASSWORD=guest',
     '# AI_API_KEY=optional',
   ].join('\n');
 
@@ -141,9 +139,9 @@ export default function SetupPage() {
 
           <div className="surface-card rounded-[24px] p-4 text-sm leading-6 text-zinc-300">
             <div>1. 准备本地 MySQL 服务</div>
-            <div>2. 配置 .env.local 中的 MYSQL_* / NEXTAUTH_* / GUEST_* </div>
+            <div>2. 配置 .env.local 中的 MYSQL_* / NEXTAUTH_* </div>
             <div>3. 点下面按钮自动建库、建表并导入示例数据</div>
-            <div>4. 回到登录页，用访客账号或你自己注册的账号进入</div>
+            <div>4. 初始化完成后可直接浏览首页；需要编辑时手动打开 /login 登录管理员账号</div>
           </div>
 
           <div className="surface-card rounded-[24px] p-4 lg:p-5">
@@ -185,15 +183,11 @@ export default function SetupPage() {
               <div className="mt-3 grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
                 <div className="space-y-2 text-sm leading-6 text-emerald-50">
                   <div>数据库已经准备好了，当前已导入 {status.animeCount} 部作品和 {status.historyCount} 条观看历史。</div>
-                  <div>现在你可以直接回到登录页，用访客账号体验完整页面。</div>
-                  <div className="text-emerald-100/85">访客账号：guest / guest</div>
+                  <div>现在你可以直接访问首页公开浏览；如果需要编辑内容，请手动打开 /login 登录管理员账号。</div>
                 </div>
                 <div className="flex flex-col gap-3">
                   <Link href="/login" className="rounded-full border border-emerald-200/20 bg-black/20 px-4 py-3 text-center text-sm text-emerald-50 transition hover:bg-black/30">
-                    去登录页
-                  </Link>
-                  <Link href="/register" className="surface-pill rounded-full px-4 py-3 text-center text-sm text-zinc-200 transition hover:border-white/15 hover:text-white">
-                    注册自己的账号
+                    打开管理员登录页
                   </Link>
                 </div>
               </div>
@@ -224,7 +218,7 @@ export default function SetupPage() {
               刷新状态
             </button>
             <Link href="/login" className="surface-pill rounded-full px-5 py-3 text-sm text-zinc-400 transition hover:border-white/15 hover:text-zinc-200">
-              返回登录页
+              打开管理员登录页
             </Link>
           </div>
 

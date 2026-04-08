@@ -15,7 +15,7 @@ type SessionUser = {
 };
 
 export default function SidebarLayout({ children }: SidebarLayoutProps) {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [collapsed, setCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -24,9 +24,9 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
   const showLocalSetup = process.env.NODE_ENV !== 'production';
   const isAuthPage = pathname === '/login' || pathname === '/register';
 
-  const isGuest = (session?.user as SessionUser | undefined)?.role === 'guest';
+  const isAuthenticated = status === 'authenticated';
   const isAdmin = (session?.user as SessionUser | undefined)?.role === 'admin';
-  const userName = typeof session?.user?.name === 'string' ? session.user.name : '追番记录者';
+  const userName = typeof session?.user?.name === 'string' ? session.user.name : '管理员';
 
   const groupedMenuItems = (['主馆区', '分析馆', '管理区'] as NavigationSection[])
     .map((section) => ({
@@ -147,10 +147,10 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
                 </svg>
               </button>
             </div>
-            {!collapsed && isGuest && (
+            {!collapsed && (
               <div className="mt-3">
                 <span className="surface-pill rounded-full px-2.5 py-1 text-[10px] uppercase tracking-[0.24em] text-zinc-400">
-                  访客模式
+                  {isAdmin ? '管理员模式' : isAuthenticated ? '已登录' : '公开浏览'}
                 </span>
               </div>
             )}
@@ -234,23 +234,31 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
                     <span className="text-[10px] uppercase tracking-[0.28em]">Open</span>
                   </Link>
                 )}
-                <div>
-                  <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500">Curator</p>
-                  <p className="mt-1 text-sm text-zinc-200">{userName}</p>
-                </div>
-                <button 
-                  onClick={handleSignOut}
-                  disabled={isSigningOut}
-                  className="surface-pill text-xs flex items-center justify-between gap-2 rounded-2xl px-3 py-2.5 text-zinc-300 hover:text-red-300 hover:border-red-400/20 hover:bg-red-400/5 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <span className="flex items-center gap-2">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    {isSigningOut ? '正在退出...' : '退出登录'}
-                  </span>
-                  <span className="text-[10px] uppercase tracking-[0.28em]">Leave</span>
-                </button>
+                {isAuthenticated ? (
+                  <>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500">Curator</p>
+                      <p className="mt-1 text-sm text-zinc-200">{userName}</p>
+                    </div>
+                    <button 
+                      onClick={handleSignOut}
+                      disabled={isSigningOut}
+                      className="surface-pill text-xs flex items-center justify-between gap-2 rounded-2xl px-3 py-2.5 text-zinc-300 hover:text-red-300 hover:border-red-400/20 hover:bg-red-400/5 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      <span className="flex items-center gap-2">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        {isSigningOut ? '正在退出...' : '退出登录'}
+                      </span>
+                      <span className="text-[10px] uppercase tracking-[0.28em]">Leave</span>
+                    </button>
+                  </>
+                ) : (
+                  <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-3 py-3 text-xs leading-6 text-zinc-400">
+                    当前为公开浏览模式。登录入口不会在页面中展示，需要时请手动访问 /login。
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex flex-col items-center gap-2">
@@ -265,16 +273,24 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
                     </svg>
                   </Link>
                 )}
-                <button 
-                  onClick={handleSignOut}
-                  disabled={isSigningOut}
-                  className="surface-pill mx-auto flex h-10 w-10 items-center justify-center rounded-2xl text-zinc-300 hover:text-red-300 hover:border-red-400/20 hover:bg-red-400/5 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
-                  aria-label="退出登录"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                </button>
+                {isAuthenticated ? (
+                  <button 
+                    onClick={handleSignOut}
+                    disabled={isSigningOut}
+                    className="surface-pill mx-auto flex h-10 w-10 items-center justify-center rounded-2xl text-zinc-300 hover:text-red-300 hover:border-red-400/20 hover:bg-red-400/5 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                    aria-label="退出登录"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                  </button>
+                ) : (
+                  <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-2xl border border-white/5 bg-white/[0.03] text-zinc-500" aria-hidden="true">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0Zm6 0s-3-6-9-6-9 6-9 6 3 6 9 6 9-6 9-6Z" />
+                    </svg>
+                  </div>
+                )}
               </div>
             )}
           </div>

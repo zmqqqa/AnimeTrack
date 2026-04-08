@@ -56,8 +56,6 @@ async function getSetupStatus(): Promise<SetupStatus> {
       !databaseName ? 'MYSQL_DATABASE' : null,
       !process.env.NEXTAUTH_URL?.trim() ? 'NEXTAUTH_URL' : null,
       !process.env.NEXTAUTH_SECRET?.trim() ? 'NEXTAUTH_SECRET' : null,
-      !process.env.GUEST_USERNAME?.trim() ? 'GUEST_USERNAME' : null,
-      !process.env.GUEST_PASSWORD?.trim() ? 'GUEST_PASSWORD' : null,
     ].filter((item): item is string => Boolean(item));
 
     if (missingEnvKeys.length > 0 || Number.isNaN(port)) {

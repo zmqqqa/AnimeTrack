@@ -20,6 +20,43 @@ type QuickRecordResult = {
   entry: AnimeRecord;
 };
 
+const QUICK_RECORD_ENRICH_TIMEOUT_MS = Math.max(2_000, Number(process.env.QUICK_RECORD_ENRICH_TIMEOUT_MS || 8_000));
+
+function resolveWithin<T>(task: Promise<T>, timeoutMs: number, onTimeout: () => T): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      resolve(onTimeout());
+    }, timeoutMs);
+
+    task
+      .then((value) => {
+        if (settled) {
+          return;
+        }
+
+        settled = true;
+        clearTimeout(timer);
+        resolve(value);
+      })
+      .catch((error) => {
+        if (settled) {
+          console.error('Quick record background enrichment failed after timeout:', error);
+          return;
+        }
+
+        settled = true;
+        clearTimeout(timer);
+        reject(error);
+      });
+  });
+}
+
 async function processQuickRecordIntent(
   parsedInput: ParsedQuickRecordIntent,
   options: { rawText: string; manualRewatchTag?: string; forceRewatch?: boolean },
@@ -66,7 +103,20 @@ async function processQuickRecordIntent(
     };
 
     if (!anime) {
-      input = await enrichAnimeInput(input, { mode: 'create', originalUserTitle: parsed.animeTitle });
+      const fallbackInput = input;
+      input = await resolveWithin(
+        enrichAnimeInput(input, {
+          mode: 'create',
+          originalUserTitle: parsed.animeTitle,
+          skipVoiceActorAliases: true,
+          providerQueryLimit: 2,
+        }),
+        QUICK_RECORD_ENRICH_TIMEOUT_MS,
+        () => {
+          console.warn(`Quick record enrichment timed out after ${QUICK_RECORD_ENRICH_TIMEOUT_MS}ms for ${parsed.animeTitle}`);
+          return fallbackInput;
+        }
+      );
     }
 
     if (rewatchTag) {
