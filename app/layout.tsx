@@ -6,6 +6,7 @@ import { Providers } from "@/components/Providers";
 import RouteLoadingBar from "@/components/shared/RouteLoadingBar";
 import Toast from "@/components/shared/Toast";
 import ErrorBoundary from "@/components/shared/ErrorBoundary";
+import AccessTracker from "@/components/shared/AccessTracker";
 
 const sans = Noto_Sans_SC({
   subsets: ["latin"],
@@ -43,6 +44,7 @@ export default function RootLayout({
         <Providers>
           <Toast />
           <RouteLoadingBar />
+          <AccessTracker />
           <SidebarLayout>
             <ErrorBoundary>
               {children}

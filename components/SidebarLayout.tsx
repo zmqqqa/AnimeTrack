@@ -216,85 +216,77 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
         </nav>
 
         {/* 底部信息 */}
-        <div className="p-4 border-t border-border/50 bg-black/10 relative z-10">
-          <div className={`glass-panel rounded-[24px] border-white/5 ${collapsed ? 'px-2 py-3' : 'px-4 py-4'}`}>
-            {!collapsed ? (
-              <div className="flex flex-col gap-3">
-                {showLocalSetup && (
-                  <Link
-                    href="/setup"
-                    className="text-xs flex items-center justify-between gap-2 rounded-2xl border border-emerald-400/18 bg-emerald-400/10 px-3 py-2.5 text-emerald-100 hover:text-emerald-50 hover:border-emerald-300/30 hover:bg-emerald-400/14 transition-colors"
-                  >
-                    <span className="flex items-center gap-2">
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
-                      </svg>
-                      本地初始化 /setup
-                    </span>
-                    <span className="text-[10px] uppercase tracking-[0.28em]">Open</span>
-                  </Link>
-                )}
-                {isAuthenticated ? (
-                  <>
-                    <div>
-                      <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500">Curator</p>
-                      <p className="mt-1 text-sm text-zinc-200">{userName}</p>
-                    </div>
-                    <button 
-                      onClick={handleSignOut}
-                      disabled={isSigningOut}
-                      className="surface-pill text-xs flex items-center justify-between gap-2 rounded-2xl px-3 py-2.5 text-zinc-300 hover:text-red-300 hover:border-red-400/20 hover:bg-red-400/5 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+        {(showLocalSetup || isAuthenticated) && (
+          <div className="p-4 border-t border-border/50 bg-black/10 relative z-10">
+            <div className={`glass-panel rounded-[24px] border-white/5 ${collapsed ? 'px-2 py-3' : 'px-4 py-4'}`}>
+              {!collapsed ? (
+                <div className="flex flex-col gap-3">
+                  {showLocalSetup && (
+                    <Link
+                      href="/setup"
+                      className="text-xs flex items-center justify-between gap-2 rounded-2xl border border-emerald-400/18 bg-emerald-400/10 px-3 py-2.5 text-emerald-100 hover:text-emerald-50 hover:border-emerald-300/30 hover:bg-emerald-400/14 transition-colors"
                     >
                       <span className="flex items-center gap-2">
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
                         </svg>
-                        {isSigningOut ? '正在退出...' : '退出登录'}
+                        本地初始化 /setup
                       </span>
-                      <span className="text-[10px] uppercase tracking-[0.28em]">Leave</span>
+                      <span className="text-[10px] uppercase tracking-[0.28em]">Open</span>
+                    </Link>
+                  )}
+                  {isAuthenticated && (
+                    <>
+                      <div>
+                        <p className="text-[10px] uppercase tracking-[0.28em] text-zinc-500">Curator</p>
+                        <p className="mt-1 text-sm text-zinc-200">{userName}</p>
+                      </div>
+                      <button 
+                        onClick={handleSignOut}
+                        disabled={isSigningOut}
+                        className="surface-pill text-xs flex items-center justify-between gap-2 rounded-2xl px-3 py-2.5 text-zinc-300 hover:text-red-300 hover:border-red-400/20 hover:bg-red-400/5 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <span className="flex items-center gap-2">
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                          </svg>
+                          {isSigningOut ? '正在退出...' : '退出登录'}
+                        </span>
+                        <span className="text-[10px] uppercase tracking-[0.28em]">Leave</span>
+                      </button>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-2">
+                  {showLocalSetup && (
+                    <Link
+                      href="/setup"
+                      className="mx-auto flex h-10 w-10 items-center justify-center rounded-2xl border border-emerald-400/18 bg-emerald-400/10 text-emerald-100 hover:text-emerald-50 hover:border-emerald-300/30 hover:bg-emerald-400/14 transition-colors"
+                      aria-label="本地初始化"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
+                      </svg>
+                    </Link>
+                  )}
+                  {isAuthenticated && (
+                    <button 
+                      onClick={handleSignOut}
+                      disabled={isSigningOut}
+                      className="surface-pill mx-auto flex h-10 w-10 items-center justify-center rounded-2xl text-zinc-300 hover:text-red-300 hover:border-red-400/20 hover:bg-red-400/5 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
+                      aria-label="退出登录"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                      </svg>
                     </button>
-                  </>
-                ) : (
-                  <div className="rounded-2xl border border-white/5 bg-white/[0.03] px-3 py-3 text-xs leading-6 text-zinc-400">
-                    当前为公开浏览模式。登录入口不会在页面中展示，需要时请手动访问 /login。
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center gap-2">
-                {showLocalSetup && (
-                  <Link
-                    href="/setup"
-                    className="mx-auto flex h-10 w-10 items-center justify-center rounded-2xl border border-emerald-400/18 bg-emerald-400/10 text-emerald-100 hover:text-emerald-50 hover:border-emerald-300/30 hover:bg-emerald-400/14 transition-colors"
-                    aria-label="本地初始化"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
-                    </svg>
-                  </Link>
-                )}
-                {isAuthenticated ? (
-                  <button 
-                    onClick={handleSignOut}
-                    disabled={isSigningOut}
-                    className="surface-pill mx-auto flex h-10 w-10 items-center justify-center rounded-2xl text-zinc-300 hover:text-red-300 hover:border-red-400/20 hover:bg-red-400/5 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
-                    aria-label="退出登录"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                  </button>
-                ) : (
-                  <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-2xl border border-white/5 bg-white/[0.03] text-zinc-500" aria-hidden="true">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0Zm6 0s-3-6-9-6-9 6-9 6 3 6 9 6 9-6 9-6Z" />
-                    </svg>
-                  </div>
-                )}
-              </div>
-            )}
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </aside>
 
       {/* 主内容区 */}

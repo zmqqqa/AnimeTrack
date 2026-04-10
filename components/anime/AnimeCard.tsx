@@ -142,7 +142,7 @@ export default memo(function AnimeCard({ item, onEdit, updateProgress, isAdmin =
         )}
 
         {/* 交互按钮 */}
-        {isAdmin ? (
+        {isAdmin && (
           <div className="flex items-center gap-2 pt-1">
             <button 
               onClick={() => updateProgress(item.id, item.progress - 1, item.totalEpisodes)}
@@ -165,10 +165,6 @@ export default memo(function AnimeCard({ item, onEdit, updateProgress, isAdmin =
                   <PlusIcon className="w-3 h-3" /> 看一集
                 </button>
             )}
-          </div>
-        ) : (
-          <div className="pt-2 text-center">
-            <span className="text-[10px] text-zinc-600 font-sans tracking-widest uppercase">ReadOnly</span>
           </div>
         )}
       </div>
