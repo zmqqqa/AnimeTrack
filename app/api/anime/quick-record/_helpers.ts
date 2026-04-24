@@ -96,7 +96,7 @@ export function toDateString(date: Date): string {
 }
 
 export function resolveRecordedDateString(parsed: ParsedQuickRecordIntent): string | undefined {
-  return parsed.watchedAt || parsed.endDate || parsed.startDate || (!parsed.isHistorical ? toDateString(new Date()) : undefined);
+  return parsed.watchedAt || (!parsed.isHistorical ? toDateString(new Date()) : undefined);
 }
 
 export function resolveIntentStatus(parsed: ParsedQuickRecordIntent, progress: number) {

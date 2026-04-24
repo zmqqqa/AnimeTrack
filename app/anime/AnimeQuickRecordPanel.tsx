@@ -47,7 +47,7 @@ export default function AnimeQuickRecordPanel({
         </button>
       </form>
 
-      <p className="text-xs text-zinc-500 mt-2">支持自然语言拆成多条记录；AI 先返回结构化字段，缺失资料再补全。句子里写“以前 / 之前”时，不会再默认写成今天开始看。</p>
+      <p className="text-xs text-zinc-500 mt-2">支持自然语言拆成多条记录；AI 会补齐缺失的作品资料，但不会改开始观看和看完日期。</p>
       {quickMessage && (
         <p className={`text-xs mt-2 ${quickMessage.includes('失败') || quickMessage.includes('请输入') ? 'text-red-400' : 'text-emerald-400'}`}>
           {quickMessage}

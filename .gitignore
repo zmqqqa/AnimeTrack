@@ -22,6 +22,7 @@
 
 # Database / Backup (个人数据不上传到 GitHub)
 /backups/
+/logs/
 /logs/maintenance/
 /docs-private/
 database/*.db
@@ -29,6 +30,10 @@ database/*.sqlite
 
 # Misc
 .DS_Store
+/.tmp/
+/backtrace
+/nexttrace
+/geekbench_claim.url
 *.pem
 *.log
 

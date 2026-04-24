@@ -65,12 +65,20 @@ const editableKeys = [
   'durationMinutes',
   'tags',
   'summary',
+  'startDate',
+  'endDate',
+  'premiereDate',
+  'cast',
+  'isFinished',
 ] as const;
-const numericKeys = new Set(['progress', 'score', 'totalEpisodes', 'durationMinutes']);
+const arrayKeys = new Set(['tags', 'cast']);
+const requiredNumericKeys = new Set(['progress']);
+const nullableNumericKeys = new Set(['score', 'totalEpisodes', 'durationMinutes']);
+const nullableTextKeys = new Set(['originalTitle', 'notes', 'coverUrl', 'summary', 'startDate', 'endDate', 'premiereDate']);
 const ANIME_LIST_CACHE_KEY = 'anime-list-items';
 
 type EditableField = (typeof editableKeys)[number];
-type AnimeDetailPatchPayload = Partial<Pick<AnimeDetailItem, EditableField>> & { tags?: string[] };
+type AnimeDetailPatchPayload = Partial<Record<EditableField, unknown>>;
 
 function resolveReturnTo(rawValue: string | null) {
   if (!rawValue) {
@@ -110,33 +118,73 @@ function areStringArraysEqual(left: unknown, right: unknown) {
   return leftValues.every((value, index) => value === rightValues[index]);
 }
 
+function isMissingValue(value: unknown) {
+  return value === undefined || value === null || value === '';
+}
+
 function normalizeEditableFieldValue(key: EditableField, value: unknown): unknown {
-  if (key === 'tags') {
+  if (arrayKeys.has(key)) {
     return normalizeStringArray(value);
   }
 
-  if (numericKeys.has(key)) {
-    if (value === '' || value === null || value === undefined) {
-      return OMIT_FIELD;
+  if (requiredNumericKeys.has(key)) {
+    return isMissingValue(value) ? 0 : Number(value);
+  }
+
+  if (nullableNumericKeys.has(key)) {
+    if (isMissingValue(value)) {
+      return null;
     }
 
     return Number(value);
+  }
+
+  if (nullableTextKeys.has(key)) {
+    return isMissingValue(value) ? null : value;
+  }
+
+  if (key === 'isFinished') {
+    if (value === undefined) {
+      return OMIT_FIELD;
+    }
+
+    return Boolean(value);
   }
 
   return value;
 }
 
 function isFieldValueUnchanged(key: EditableField, nextValue: unknown, currentValue: unknown) {
-  if (key === 'tags') {
+  if (arrayKeys.has(key)) {
     return areStringArraysEqual(nextValue, currentValue);
   }
 
-  if (numericKeys.has(key)) {
+  if (requiredNumericKeys.has(key)) {
+    return Number(currentValue ?? 0) === nextValue;
+  }
+
+  if (nullableNumericKeys.has(key)) {
+    if (nextValue === null) {
+      return isMissingValue(currentValue);
+    }
+
     if (currentValue === undefined || currentValue === null || currentValue === '') {
       return false;
     }
 
     return Number(currentValue) === nextValue;
+  }
+
+  if (nullableTextKeys.has(key)) {
+    if (nextValue === null) {
+      return isMissingValue(currentValue);
+    }
+
+    return nextValue === currentValue;
+  }
+
+  if (key === 'isFinished') {
+    return nextValue === currentValue;
   }
 
   return nextValue === currentValue;

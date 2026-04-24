@@ -14,6 +14,7 @@
     "db:init-with-anime-data": "node scripts/db/apply_sql_files.js database/schema.sql database/seed_anime_data.sql",
     "user:create-admin": "node scripts/db/create_admin_user.js",
     "db:export-anime-seed": "node scripts/db/export_anime_seed.js",
+    "db:table-backup": "node scripts/db/export_table_backups.js",
     "db:full-backup": "node scripts/db/export_full_backup.js",
     "db:scheduled-backup": "node scripts/db/scheduled_backup.js",
     "anime:enrich-titles": "node scripts/enrich/enrich_titles.js",

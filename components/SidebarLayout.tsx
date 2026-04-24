@@ -39,7 +39,7 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
     .map((item) => item.href)
     .filter((href) => href.startsWith('/anime/') && href !== '/anime');
 
-  const isItemActive = (href: string) => {
+  const doesPathMatchItem = (href: string) => {
     if (href === '/') return pathname === '/';
     if (href === '/anime') {
       const isKnownSubsection = animeSubsectionHrefs.some((subsectionHref) => (
@@ -50,6 +50,14 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
     }
     return pathname === href || pathname.startsWith(`${href}/`);
   };
+
+  const activeHref = groupedMenuItems
+    .flatMap((group) => group.items)
+    .map((item) => item.href)
+    .filter((href) => doesPathMatchItem(href))
+    .sort((left, right) => right.length - left.length)[0] ?? null;
+
+  const isItemActive = (href: string) => href === activeHref;
 
   const handleSignOut = async () => {
     setIsSigningOut(true);

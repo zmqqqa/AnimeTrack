@@ -4,6 +4,7 @@ import { addBatchWatchHistory, addWatchHistory } from '@/lib/history';
 import { parseQuickRecordBatch, type ParsedQuickRecordIntent } from '@/lib/ai';
 import { enrichAnimeInput } from '@/lib/anime-enrichment';
 import { apiError, apiSuccess, requireAdmin } from '@/lib/api-response';
+import metadataMergePolicy from '@/lib/metadata/merge-policy.js';
 import {
   detectRewatchTag, resolveNextRewatchTag, shouldAutoResolveRewatch,
   normalizeDate, resolveRecordedDateString, resolveIntentStatus, resolveTargetProgress,
@@ -20,41 +21,41 @@ type QuickRecordResult = {
   entry: AnimeRecord;
 };
 
-const QUICK_RECORD_ENRICH_TIMEOUT_MS = Math.max(2_000, Number(process.env.QUICK_RECORD_ENRICH_TIMEOUT_MS || 8_000));
+const { DEFAULT_METADATA_FIELDS, buildMetadataPatch } = metadataMergePolicy as unknown as {
+  DEFAULT_METADATA_FIELDS: string[];
+  buildMetadataPatch: (
+    current: Partial<CreateAnimeDTO>,
+    candidateLike: Partial<CreateAnimeDTO> | { candidate: Partial<CreateAnimeDTO>; source?: Record<string, string> },
+    options?: {
+      fields?: string[];
+      force?: boolean;
+      allowReplaceFilledCover?: boolean;
+      allowCastAliasAugment?: boolean;
+      allowIsFinishedUpgrade?: boolean;
+    }
+  ) => { patch: Partial<CreateAnimeDTO>; sources: Record<string, string> };
+};
 
-function resolveWithin<T>(task: Promise<T>, timeoutMs: number, onTimeout: () => T): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    let settled = false;
-    const timer = setTimeout(() => {
-      if (settled) {
-        return;
-      }
-
-      settled = true;
-      resolve(onTimeout());
-    }, timeoutMs);
-
-    task
-      .then((value) => {
-        if (settled) {
-          return;
-        }
-
-        settled = true;
-        clearTimeout(timer);
-        resolve(value);
-      })
-      .catch((error) => {
-        if (settled) {
-          console.error('Quick record background enrichment failed after timeout:', error);
-          return;
-        }
-
-        settled = true;
-        clearTimeout(timer);
-        reject(error);
-      });
-  });
+function toAnimeInput(record: AnimeRecord): CreateAnimeDTO {
+  return {
+    title: record.title,
+    originalTitle: record.originalTitle,
+    coverUrl: record.coverUrl,
+    status: record.status,
+    score: record.score,
+    progress: record.progress,
+    totalEpisodes: record.totalEpisodes,
+    durationMinutes: record.durationMinutes,
+    notes: record.notes,
+    tags: record.tags,
+    cast: record.cast,
+    castAliases: record.castAliases,
+    summary: record.summary,
+    startDate: record.startDate,
+    endDate: record.endDate,
+    premiereDate: record.premiereDate,
+    isFinished: record.isFinished,
+  };
 }
 
 async function processQuickRecordIntent(
@@ -96,28 +97,32 @@ async function processQuickRecordIntent(
       cast: parsed.cast && parsed.cast.length > 0 ? parsed.cast : anime?.cast,
       castAliases: mergeStringArrays(anime?.castAliases, parsed.castAliases, parsed.cast),
       summary: parsed.summary || anime?.summary,
-      startDate: parsed.startDate,
-      endDate: parsed.endDate,
+      startDate: undefined,
+      endDate: undefined,
       premiereDate: anime?.premiereDate,
       isFinished: parsed.isFinished ?? anime?.isFinished,
     };
 
     if (!anime) {
-      const fallbackInput = input;
-      input = await resolveWithin(
-        enrichAnimeInput(input, {
-          mode: 'create',
-          originalUserTitle: parsed.animeTitle,
-          skipVoiceActorAliases: true,
-          providerQueryLimit: 2,
-        }),
-        QUICK_RECORD_ENRICH_TIMEOUT_MS,
-        () => {
-          console.warn(`Quick record enrichment timed out after ${QUICK_RECORD_ENRICH_TIMEOUT_MS}ms for ${parsed.animeTitle}`);
-          return fallbackInput;
-        }
-      );
+      input = await enrichAnimeInput(input, {
+        mode: 'create',
+        originalUserTitle: parsed.originalTitle || parsed.animeTitle,
+        skipVoiceActorAliases: true,
+        providerQueryLimit: 2,
+      });
     }
+
+    const metadataEnriched = !anime && Boolean(
+      (!parsed.originalTitle && input.originalTitle) ||
+      (!parsed.coverUrl && input.coverUrl) ||
+      (!parsed.summary && input.summary) ||
+      (!parsed.totalEpisodes && input.totalEpisodes) ||
+      (!parsed.durationMinutes && input.durationMinutes) ||
+      (!(parsed.tags && parsed.tags.length > 0) && input.tags && input.tags.length > 0) ||
+      (!(parsed.cast && parsed.cast.length > 0) && input.cast && input.cast.length > 0) ||
+      (!parsed.premiereDate && input.premiereDate) ||
+      (parsed.isFinished === undefined && input.isFinished !== undefined)
+    );
 
     if (rewatchTag) {
       input.tags = mergeStringArrays(input.tags, [rewatchTag]);
@@ -132,13 +137,6 @@ async function processQuickRecordIntent(
     } else if (input.status === 'completed' && input.progress === 0) {
       input.progress = 1;
     }
-    if (!input.startDate && input.progress > 0 && input.status !== 'plan_to_watch' && recordedDateString) {
-      input.startDate = recordedDateString;
-    }
-    if ((input.status === 'completed' || (input.totalEpisodes && input.progress >= input.totalEpisodes)) && !input.endDate && recordedDateString) {
-      input.endDate = recordedDateString;
-      input.status = 'completed';
-    }
 
     const created = await createAnimeRecord(input);
     const shouldWriteHistory = Boolean(recordedDateString) && created.progress > 0 && created.status !== 'plan_to_watch';
@@ -149,17 +147,45 @@ async function processQuickRecordIntent(
     const entry = created;
     return {
       created: true, replay: false, rewatchTag, historyWritten: shouldWriteHistory, parsed,
-      recognition: buildRecognition(parsed, entry, entry.progress, !anime, shouldWriteHistory, recordedDateString, entry.status),
+      recognition: buildRecognition(parsed, entry, entry.progress, metadataEnriched, shouldWriteHistory, recordedDateString, entry.status),
       entry,
     };
   }
 
   // ── 更新已有作品 ──
-  const effectiveTotalEpisodes = parsed.totalEpisodes || anime.totalEpisodes;
+  const enriched = await enrichAnimeInput(toAnimeInput(anime), {
+    mode: 'fill-missing',
+    originalUserTitle: parsed.originalTitle || parsed.animeTitle || anime.originalTitle || anime.title,
+    skipVoiceActorAliases: true,
+    providerQueryLimit: 2,
+  });
+  const metadataPatch = buildMetadataPatch(anime, enriched, {
+    fields: DEFAULT_METADATA_FIELDS,
+    allowCastAliasAugment: true,
+    allowIsFinishedUpgrade: true,
+  }).patch;
+  const effectiveTotalEpisodes = parsed.totalEpisodes || enriched.totalEpisodes || anime.totalEpisodes;
   const targetProgress = resolveTargetProgress(parsed, anime.progress, effectiveTotalEpisodes);
-  const mergedTags = mergeStringArrays(anime.tags, parsed.tags, rewatchTag ? [rewatchTag] : undefined);
-  const mergedCastAliases = mergeStringArrays(anime.castAliases, parsed.castAliases, parsed.cast);
-  const patch: Partial<CreateAnimeDTO> = {};
+  const mergedTags = mergeStringArrays(
+    anime.tags,
+    Array.isArray(metadataPatch.tags) ? metadataPatch.tags : undefined,
+    parsed.tags,
+    rewatchTag ? [rewatchTag] : undefined,
+  );
+  const mergedCast = mergeStringArrays(
+    anime.cast,
+    Array.isArray(metadataPatch.cast) ? metadataPatch.cast : undefined,
+    parsed.cast,
+  );
+  const mergedCastAliases = mergeStringArrays(
+    anime.castAliases,
+    Array.isArray(metadataPatch.castAliases) ? metadataPatch.castAliases : undefined,
+    parsed.castAliases,
+    parsed.cast,
+    mergedCast,
+  );
+  const patch: Partial<CreateAnimeDTO> = { ...metadataPatch };
+  const metadataEnriched = Object.keys(metadataPatch).length > 0;
 
   if (parsed.originalTitle && !anime.originalTitle) patch.originalTitle = parsed.originalTitle;
   if (parsed.score !== undefined && anime.score === undefined) patch.score = parsed.score;
@@ -168,7 +194,7 @@ async function processQuickRecordIntent(
   if (parsed.notes && !anime.notes) patch.notes = parsed.notes;
   if (parsed.summary && !anime.summary) patch.summary = parsed.summary;
   if (parsed.coverUrl && !anime.coverUrl) patch.coverUrl = parsed.coverUrl;
-  if (parsed.cast && parsed.cast.length > 0 && (!anime.cast || anime.cast.length === 0)) patch.cast = parsed.cast;
+  if (!sameStringArray(mergedCast, anime.cast)) patch.cast = mergedCast;
   if (!sameStringArray(mergedTags, anime.tags)) patch.tags = mergedTags;
   if (!sameStringArray(mergedCastAliases, anime.castAliases)) patch.castAliases = mergedCastAliases;
   if (parsed.isFinished !== undefined && anime.isFinished === undefined) patch.isFinished = parsed.isFinished;
@@ -176,18 +202,6 @@ async function processQuickRecordIntent(
 
   const resolvedStatus = parsed.status || ((effectiveTotalEpisodes && targetProgress >= effectiveTotalEpisodes) ? 'completed' : undefined);
   if (resolvedStatus && resolvedStatus !== anime.status) patch.status = resolvedStatus;
-
-  if (!anime.startDate && parsed.startDate) {
-    patch.startDate = parsed.startDate;
-  } else if (!anime.startDate && targetProgress > 0 && recordedDateString && !parsed.isHistorical) {
-    patch.startDate = recordedDateString;
-  }
-
-  if (parsed.endDate && parsed.endDate !== anime.endDate) {
-    patch.endDate = parsed.endDate;
-  } else if ((resolvedStatus === 'completed' || (effectiveTotalEpisodes && targetProgress >= effectiveTotalEpisodes)) && !anime.endDate && recordedDateString) {
-    patch.endDate = recordedDateString;
-  }
 
   let entry = anime;
   if (hasPatchChanges(patch)) {
@@ -211,7 +225,7 @@ async function processQuickRecordIntent(
   const finalEntry = entry;
   return {
     created: false, replay: historyWritten && targetProgress <= anime.progress, rewatchTag, historyWritten, parsed,
-    recognition: buildRecognition(parsed, finalEntry, finalEntry.progress, false, historyWritten, recordedDateString, finalEntry.status),
+    recognition: buildRecognition(parsed, finalEntry, finalEntry.progress, metadataEnriched, historyWritten, recordedDateString, finalEntry.status),
     entry: finalEntry,
   };
 }

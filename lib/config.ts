@@ -48,13 +48,6 @@ export const navigationItems: NavigationItem[] = [
     adminOnly: true,
   },
   {
-    label: '访问分析',
-    href: '/admin/traffic',
-    description: '页面访问与访客统计',
-    section: '管理区',
-    adminOnly: true,
-  },
-  {
     label: '备份与导出',
     href: '/backup',
     description: '数据备份与导出管理',
