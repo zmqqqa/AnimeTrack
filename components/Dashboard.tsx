@@ -79,6 +79,7 @@ export default function Dashboard() {
             label: '看番总时长',
             value: Math.round(animeStats.minutesWatched / 60).toString(),
             unit: '小时',
+            prefix: '约',
             icon: ArrowTrendingUpIcon,
             color: 'text-cyan-300',
         },
@@ -300,13 +301,18 @@ export default function Dashboard() {
                                 </div>
 
                                 <div className="flex items-start relative z-10">
-                                    <div className={`flex items-center justify-center w-8 h-8 rounded-xl ${stat.color} bg-current/15 border border-current/20`}>
+                                    <div className={`flex items-center justify-center w-8 h-8 rounded-xl ${stat.color}`}>
                                         <stat.icon className="w-4 h-4" />
                                     </div>
                                 </div>
 
                                 <div className="relative z-10">
                                     <div className="flex items-baseline gap-1.5">
+                                        {stat.prefix ? (
+                                            <span className="text-sm font-semibold tracking-[0.18em] text-zinc-400">
+                                                {stat.prefix}
+                                            </span>
+                                        ) : null}
                                         <span className="text-3xl font-bold tracking-tight text-white drop-shadow-sm">
                                             {stat.value}
                                         </span>
