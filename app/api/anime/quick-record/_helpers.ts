@@ -77,7 +77,12 @@ export function shouldAutoResolveRewatch(
     return true;
   }
 
-  return parsed.episode === 1 || parsed.progress === 1;
+  if (parsed.episode === 1 || parsed.progress === 1) {
+    return true;
+  }
+
+  const hasExplicitProgress = parsed.episode !== undefined || parsed.progress !== undefined;
+  return !hasExplicitProgress && (parsed.status === 'watching' || parsed.status === undefined);
 }
 
 // ── 日期 / 进度推导 ──

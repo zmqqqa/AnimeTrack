@@ -198,7 +198,6 @@ export default function Dashboard() {
 
     return (
         <div className="p-4 lg:p-8 space-y-4 lg:space-y-6 animate-fade-in pb-20 relative">
-            <div className="absolute inset-0 pointer-events-none opacity-[0.04] mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
             <div className="theme-dashboard-aura absolute inset-0 pointer-events-none opacity-40" />
 
             <DashboardHeader isLoading={isLoading} isRefreshing={isRefreshing} />
@@ -238,7 +237,7 @@ export default function Dashboard() {
 
                             <div className="flex flex-wrap items-center gap-3 pt-1">
                                 <Link href="/anime" className="theme-accent-soft rounded-full px-4 py-2 text-sm transition-all">
-                                    进入片库
+                                    进入番剧列表
                                 </Link>
                                 <Link href="/anime/atlas" className="theme-secondary-soft rounded-full px-4 py-2 text-sm transition-all">
                                     打开图谱馆
@@ -518,7 +517,7 @@ export default function Dashboard() {
                             </h2>
                             <Link href="/anime/timeline" className="text-[10px] font-bold text-zinc-600 hover:text-white transition-colors">查看全部</Link>
                         </div>
-                        <div className="max-h-[480px] overflow-y-auto pr-2 overscroll-contain">
+                        <div className="max-h-[480px] lg:max-h-[430px] xl:max-h-[380px] overflow-y-auto pr-2 overscroll-contain">
                             <ActivityFeed history={parsedHistory} />
                         </div>
                     </div>
