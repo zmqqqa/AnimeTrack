@@ -88,7 +88,7 @@ export default function SetupPage() {
         <section className="glass-panel-strong rounded-[32px] p-6 lg:p-8">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div className="space-y-3">
-              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-[10px] uppercase tracking-[0.3em] text-emerald-100/85">
+              <div className="theme-accent-soft inline-flex items-center gap-2 rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.3em]">
                 Local Setup
               </div>
               <div>
@@ -108,21 +108,21 @@ export default function SetupPage() {
         <section className="grid gap-4 lg:grid-cols-3">
           <div className="glass-panel rounded-[28px] p-5">
             <div className="text-[10px] uppercase tracking-[0.26em] text-zinc-500">环境变量</div>
-            <div className={`mt-3 text-lg font-semibold ${status.envReady ? 'text-emerald-300' : 'text-amber-300'}`}>
+            <div className={`mt-3 text-lg font-semibold ${status.envReady ? 'theme-accent-text' : 'text-amber-300'}`}>
               {status.envReady ? '已配置' : '待配置'}
             </div>
             <p className="mt-2 text-xs leading-5 text-zinc-500">{status.envFileHint}</p>
           </div>
           <div className="glass-panel rounded-[28px] p-5">
             <div className="text-[10px] uppercase tracking-[0.26em] text-zinc-500">数据库连接</div>
-            <div className={`mt-3 text-lg font-semibold ${status.databaseReachable ? 'text-emerald-300' : 'text-zinc-200'}`}>
+            <div className={`mt-3 text-lg font-semibold ${status.databaseReachable ? 'theme-accent-text' : 'text-zinc-200'}`}>
               {status.databaseReachable ? '可连接' : '未连接'}
             </div>
             <p className="mt-2 text-xs leading-5 text-zinc-500">如果 MySQL 用户有建库权限，按钮会自动创建数据库。</p>
           </div>
           <div className="glass-panel rounded-[28px] p-5">
             <div className="text-[10px] uppercase tracking-[0.26em] text-zinc-500">示例数据</div>
-            <div className={`mt-3 text-lg font-semibold ${status.seeded ? 'text-cyan-300' : 'text-zinc-200'}`}>
+            <div className={`mt-3 text-lg font-semibold ${status.seeded ? 'theme-secondary-text' : 'text-zinc-200'}`}>
               {status.seeded ? `${status.animeCount} 部作品` : '尚未导入'}
             </div>
             <p className="mt-2 text-xs leading-5 text-zinc-500">观看历史 {status.historyCount} 条，用户数据不会被写入仓库示例。</p>
@@ -171,22 +171,22 @@ export default function SetupPage() {
           )}
 
           {status.databaseReachable && !status.seeded && !error && (
-            <div className="rounded-[24px] border border-cyan-400/20 bg-cyan-400/10 p-4 text-sm leading-6 text-cyan-50">
-              <div className="text-[10px] uppercase tracking-[0.28em] text-cyan-100/80">当前判断</div>
+            <div className="theme-secondary-soft rounded-[24px] p-4 text-sm leading-6">
+              <div className="text-[10px] uppercase tracking-[0.28em] theme-accent-text-muted">当前判断</div>
               <div className="mt-2">数据库已经能连上，接下来只需要点“一键初始化数据库与示例数据”就能把页面内容准备好。</div>
             </div>
           )}
 
           {status.seeded && (
-            <div className="rounded-[24px] border border-emerald-400/20 bg-emerald-400/10 p-4 lg:p-5">
-              <div className="text-[10px] uppercase tracking-[0.28em] text-emerald-100/80">初始化完成后的下一步</div>
+            <div className="theme-accent-soft rounded-[24px] p-4 lg:p-5">
+              <div className="theme-accent-text-muted text-[10px] uppercase tracking-[0.28em]">初始化完成后的下一步</div>
               <div className="mt-3 grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
-                <div className="space-y-2 text-sm leading-6 text-emerald-50">
+                <div className="space-y-2 text-sm leading-6 text-zinc-100">
                   <div>数据库已经准备好了，当前已导入 {status.animeCount} 部作品和 {status.historyCount} 条观看历史。</div>
                   <div>现在你可以直接访问首页公开浏览；如果需要编辑内容，请手动打开 /login 登录管理员账号。</div>
                 </div>
                 <div className="flex flex-col gap-3">
-                  <Link href="/login" className="rounded-full border border-emerald-200/20 bg-black/20 px-4 py-3 text-center text-sm text-emerald-50 transition hover:bg-black/30">
+                  <Link href="/login" className="theme-accent-soft rounded-full px-4 py-3 text-center text-sm transition hover:bg-black/30">
                     打开管理员登录页
                   </Link>
                 </div>
@@ -205,7 +205,7 @@ export default function SetupPage() {
               type="button"
               onClick={handleBootstrap}
               disabled={isSubmitting || !status.allowed}
-              className="rounded-full border border-emerald-300/20 bg-emerald-300/12 px-5 py-3 text-sm font-medium text-emerald-100 transition hover:bg-emerald-300/18 disabled:cursor-not-allowed disabled:opacity-50"
+              className="theme-accent-button rounded-full px-5 py-3 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isSubmitting ? '正在初始化...' : '一键初始化数据库与示例数据'}
             </button>

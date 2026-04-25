@@ -416,23 +416,23 @@ export default function AnimePageClient() {
           <div className="space-y-4">
             {/* 搜索框 + 视图切换 */}
             <div className="flex gap-3">
-              <div className="relative group shadow-sm flex-1">
+              <div className="theme-focus-parent relative group shadow-sm flex-1">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <MagnifyingGlassIcon className="h-5 w-5 text-zinc-500 group-focus-within:text-purple-500 transition-colors" />
+                  <MagnifyingGlassIcon className="theme-focus-icon h-5 w-5 text-zinc-500 transition-colors" />
                 </div>
                 <input
                   type="text"
                   placeholder="搜索番剧、原名或声优..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="surface-input block w-full pl-11 pr-4 py-3 rounded-2xl text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all shadow-xl"
+                  className="surface-input theme-focus-accent block w-full pl-11 pr-4 py-3 rounded-2xl text-white placeholder-zinc-500 transition-all shadow-xl"
                 />
               </div>
               <div className="surface-card-muted flex items-center rounded-2xl overflow-hidden flex-shrink-0">
                 <button
                   type="button"
                   onClick={() => toggleViewMode('grid')}
-                  className={`p-3 transition-all ${viewMode === 'grid' ? 'bg-emerald-500/15 text-emerald-300' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'}`}
+                  className={`p-3 transition-all ${viewMode === 'grid' ? 'theme-accent-soft' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'}`}
                   aria-label="网格视图"
                 >
                   <Squares2X2Icon className="w-5 h-5" />
@@ -440,7 +440,7 @@ export default function AnimePageClient() {
                 <button
                   type="button"
                   onClick={() => toggleViewMode('list')}
-                  className={`p-3 transition-all ${viewMode === 'list' ? 'bg-emerald-500/15 text-emerald-300' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'}`}
+                  className={`p-3 transition-all ${viewMode === 'list' ? 'theme-accent-soft' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/5'}`}
                   aria-label="列表视图"
                 >
                   <ListBulletIcon className="w-5 h-5" />

@@ -44,8 +44,8 @@ export default function AnimeSidebar({
               <p className="text-xs text-zinc-500 font-bold">部</p>
             </div>
           </div>
-          <div className="p-5 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 hover:bg-emerald-500/10 transition-all group/stat">
-            <p className="text-xs text-emerald-400 font-bold uppercase mb-3 tracking-wider group-hover/stat:translate-x-1 transition-transform">已经看完</p>
+          <div className="theme-accent-soft p-5 rounded-2xl transition-all group/stat">
+            <p className="theme-accent-text text-xs font-bold uppercase mb-3 tracking-wider group-hover/stat:translate-x-1 transition-transform">已经看完</p>
             <div className="flex items-baseline gap-2">
               <p className="text-3xl font-bold text-white tracking-tighter leading-none">{libraryStats.completedCount}</p>
               <p className="text-xs text-zinc-500 font-bold">部</p>

@@ -20,8 +20,8 @@ const statusMap: Record<AnimeStatus, string> = {
 };
 
 const statusBadgeStyles: Record<AnimeStatus, string> = {
-  watching: 'border-emerald-400/30 bg-emerald-400/10 text-emerald-200',
-  completed: 'border-cyan-400/30 bg-cyan-400/10 text-cyan-200',
+  watching: 'theme-status-watching',
+  completed: 'theme-status-completed',
   dropped: 'border-rose-400/30 bg-rose-400/10 text-rose-200',
   plan_to_watch: 'border-violet-400/30 bg-violet-400/10 text-violet-200',
 };
@@ -358,14 +358,14 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
 
   return (
     <div className="mx-auto w-full max-w-[1660px] px-4 md:px-6 xl:px-8 2xl:px-10 pb-20 animate-in fade-in zoom-in-95 duration-300">
-      <div className="relative overflow-hidden rounded-[32px] border border-emerald-500/10 bg-[#071110] shadow-[0_30px_80px_rgba(0,0,0,0.45)]">
+      <div className="relative overflow-hidden rounded-[32px] border border-slate-300/10 shadow-[0_30px_80px_rgba(0,0,0,0.45)]" style={{ backgroundColor: 'var(--background)' }}>
         {coverUrl && (
           <div className="absolute inset-0 opacity-[0.08]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={coverUrl} alt={item.title} className="h-full w-full scale-110 object-cover blur-3xl" />
           </div>
         )}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.18),transparent_30%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.16),transparent_25%),linear-gradient(180deg,rgba(7,17,16,0.82),rgba(4,10,10,0.98))]" />
+        <div className="theme-detail-aura absolute inset-0" />
 
         <div className="relative p-5 md:p-8 xl:p-10 2xl:p-12">
           <button onClick={handleReturnToList} className="flex items-center gap-2 text-sm text-zinc-500 transition-colors hover:text-white">
@@ -407,7 +407,7 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
                       <select
                         value={formData.status || item.status}
                         onChange={(event) => handleChange('status', event.target.value as AnimeStatus)}
-                        className="surface-input w-full rounded-xl px-3 py-2.5 text-sm text-white outline-none transition focus:border-emerald-400/40"
+                        className="surface-input theme-focus-accent w-full rounded-xl px-3 py-2.5 text-sm text-white transition"
                       >
                         {Object.keys(statusMap).map((status) => (
                           <option key={status} value={status}>{statusMap[status as AnimeStatus]}</option>
@@ -422,7 +422,7 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
                           type="number"
                           value={formData.score ?? ''}
                           onChange={(event) => handleChange('score', event.target.value)}
-                          className="surface-input w-full rounded-xl px-3 py-2.5 text-sm text-white outline-none transition focus:border-emerald-400/40"
+                          className="surface-input theme-focus-accent w-full rounded-xl px-3 py-2.5 text-sm text-white transition"
                         />
                       </div>
                       <div>
@@ -431,7 +431,7 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
                           type="number"
                           value={formData.durationMinutes ?? ''}
                           onChange={(event) => handleChange('durationMinutes', event.target.value)}
-                          className="surface-input w-full rounded-xl px-3 py-2.5 text-sm text-white outline-none transition focus:border-emerald-400/40"
+                          className="surface-input theme-focus-accent w-full rounded-xl px-3 py-2.5 text-sm text-white transition"
                         />
                       </div>
                     </div>
@@ -441,7 +441,7 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
                       <input
                         value={formData.coverUrl || ''}
                         onChange={(event) => handleChange('coverUrl', event.target.value)}
-                        className="surface-input w-full rounded-xl px-3 py-2.5 text-sm text-white outline-none transition focus:border-emerald-400/40"
+                        className="surface-input theme-focus-accent w-full rounded-xl px-3 py-2.5 text-sm text-white transition"
                       />
                     </div>
                   </div>
@@ -472,7 +472,7 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
                       <input
                         value={formData.title || ''}
                         onChange={(event) => handleChange('title', event.target.value)}
-                        className="w-full border-b border-white/10 bg-transparent pb-2 text-3xl font-semibold tracking-tight text-white outline-none transition focus:border-emerald-400/40"
+                        className="theme-focus-accent w-full border-b border-white/10 bg-transparent pb-2 text-3xl font-semibold tracking-tight text-white transition"
                       />
                     ) : (
                       <h1 className="text-3xl font-semibold tracking-tight text-white md:text-[2.5rem]">{item.title}</h1>
@@ -483,7 +483,7 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
                         value={formData.originalTitle || ''}
                         placeholder="原名 / 日文名"
                         onChange={(event) => handleChange('originalTitle', event.target.value)}
-                        className="w-full border-b border-white/10 bg-transparent pb-2 text-lg text-zinc-400 outline-none transition focus:border-emerald-400/40"
+                        className="theme-focus-accent w-full border-b border-white/10 bg-transparent pb-2 text-lg text-zinc-400 transition"
                       />
                     ) : (
                       item.originalTitle && <p className="text-lg text-zinc-400">{item.originalTitle}</p>
@@ -494,7 +494,7 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
                         value={toTagInputValue(formData.tags)}
                         onChange={(event) => handleChange('tags', event.target.value)}
                         placeholder="标签 (逗号分隔)"
-                        className="surface-input w-full rounded-2xl px-4 py-3 text-sm text-white outline-none transition focus:border-emerald-400/40"
+                        className="surface-input theme-focus-accent w-full rounded-2xl px-4 py-3 text-sm text-white transition"
                       />
                     ) : (
                       <div className="flex flex-wrap gap-2">
@@ -525,7 +525,7 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
                             <button
                               onClick={saveChanges}
                               disabled={saving}
-                              className="rounded-xl bg-emerald-400 px-4 py-2.5 text-sm font-semibold text-black transition hover:bg-emerald-300 disabled:opacity-50"
+                              className="theme-accent-button rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:opacity-50"
                             >
                               {saving ? '保存中...' : '保存更改'}
                             </button>
@@ -586,7 +586,7 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
                               type="number"
                               value={formData.progress ?? item.progress}
                               onChange={(event) => handleChange('progress', event.target.value)}
-                              className="surface-input w-20 rounded-xl px-2 py-1.5 text-center text-sm text-white outline-none transition focus:border-emerald-400/40"
+                              className="surface-input theme-focus-accent w-20 rounded-xl px-2 py-1.5 text-center text-sm text-white transition"
                             />
                             <span>/</span>
                             <input
@@ -594,7 +594,7 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
                               value={formData.totalEpisodes ?? item.totalEpisodes ?? ''}
                               onChange={(event) => handleChange('totalEpisodes', event.target.value)}
                               placeholder="?"
-                              className="surface-input w-20 rounded-xl px-2 py-1.5 text-center text-sm text-white outline-none transition focus:border-emerald-400/40"
+                              className="surface-input theme-focus-accent w-20 rounded-xl px-2 py-1.5 text-center text-sm text-white transition"
                             />
                           </div>
                         ) : (
@@ -610,7 +610,7 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
 
                     <div className="mt-4 h-3 overflow-hidden rounded-full bg-zinc-900/90">
                       <div
-                        className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-500 transition-all duration-700"
+                        className="theme-spectrum-gradient h-full rounded-full transition-all duration-700"
                         style={{ width: `${progressPercent}%` }}
                       />
                     </div>
@@ -626,7 +626,7 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
                       </div>
                       <div className="surface-card-muted rounded-2xl p-4">
                         <div className="text-[11px] uppercase tracking-[0.18em] text-zinc-500">片源状态</div>
-                        <div className={`mt-2 text-sm font-medium ${item.isFinished ? 'text-emerald-300' : 'text-cyan-300'}`}>
+                        <div className={`mt-2 text-sm font-medium ${item.isFinished ? 'theme-accent-text' : 'theme-secondary-text'}`}>
                           {item.isFinished ? '已完结' : '连载中'}
                         </div>
                       </div>
@@ -643,7 +643,7 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
                         rows={8}
                         value={formData.summary || ''}
                         onChange={(event) => handleChange('summary', event.target.value)}
-                        className="surface-input mt-4 min-h-[220px] w-full rounded-2xl p-4 text-sm leading-7 text-zinc-200 outline-none transition focus:border-emerald-400/40"
+                        className="surface-input theme-focus-accent mt-4 min-h-[220px] w-full rounded-2xl p-4 text-sm leading-7 text-zinc-200 transition"
                       />
                     ) : (
                       <p className="mt-4 whitespace-pre-wrap text-sm leading-8 text-zinc-300">
@@ -662,7 +662,7 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
                         rows={4}
                         value={formData.notes || ''}
                         onChange={(event) => handleChange('notes', event.target.value)}
-                        className="surface-input mt-4 w-full rounded-2xl p-4 text-sm leading-7 text-zinc-200 outline-none transition focus:border-emerald-400/40"
+                        className="surface-input theme-focus-accent mt-4 w-full rounded-2xl p-4 text-sm leading-7 text-zinc-200 transition"
                       />
                     ) : (
                       <p className="mt-4 text-sm italic leading-7 text-zinc-400">
@@ -687,7 +687,7 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
                             type="date"
                             value={formData.startDate || ''}
                             onChange={(event) => handleChange('startDate', event.target.value)}
-                            className="surface-input rounded-xl px-2 py-1.5 text-sm text-white outline-none transition focus:border-emerald-400/40"
+                            className="surface-input theme-focus-accent rounded-xl px-2 py-1.5 text-sm text-white transition"
                           />
                         ) : (
                           <span className="text-zinc-100">{formatDateLabel(item.startDate)}</span>
@@ -701,7 +701,7 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
                             type="date"
                             value={formData.endDate || ''}
                             onChange={(event) => handleChange('endDate', event.target.value)}
-                            className="surface-input rounded-xl px-2 py-1.5 text-sm text-white outline-none transition focus:border-emerald-400/40"
+                            className="surface-input theme-focus-accent rounded-xl px-2 py-1.5 text-sm text-white transition"
                           />
                         ) : (
                           <span className="text-zinc-100">{formatDateLabel(item.endDate)}</span>
@@ -715,7 +715,7 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
                             type="date"
                             value={formData.premiereDate || ''}
                             onChange={(event) => handleChange('premiereDate', event.target.value)}
-                            className="surface-input rounded-xl px-2 py-1.5 text-sm text-white outline-none transition focus:border-emerald-400/40"
+                            className="surface-input theme-focus-accent rounded-xl px-2 py-1.5 text-sm text-white transition"
                           />
                         ) : (
                           <span className="text-zinc-100">{formatDateLabel(item.premiereDate)}</span>
@@ -730,12 +730,12 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
                               type="checkbox"
                               checked={Boolean(formData.isFinished ?? item.isFinished)}
                               onChange={(event) => handleChange('isFinished', event.target.checked)}
-                              className="h-4 w-4 rounded border-white/10 bg-zinc-950 text-emerald-400 focus:ring-emerald-400"
+                              className="h-4 w-4 rounded border-white/10 bg-zinc-950 text-primary focus:ring-primary"
                             />
                             已完结
                           </label>
                         ) : (
-                          <span className={item.isFinished ? 'text-emerald-300' : 'text-cyan-300'}>{item.isFinished ? '已完结' : '连载中'}</span>
+                          <span className={item.isFinished ? 'theme-accent-text' : 'theme-secondary-text'}>{item.isFinished ? '已完结' : '连载中'}</span>
                         )}
                       </div>
                     </div>
@@ -760,7 +760,7 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
                         onChange={(event) => {
                           handleChange('cast', event.target.value.split(/[,，]/).map((name) => name.trim()).filter(Boolean));
                         }}
-                        className="surface-input mt-4 w-full rounded-2xl p-4 text-sm leading-7 text-zinc-200 outline-none transition focus:border-emerald-400/40"
+                        className="surface-input theme-focus-accent mt-4 w-full rounded-2xl p-4 text-sm leading-7 text-zinc-200 transition"
                       />
                     ) : item.cast && item.cast.length > 0 ? (
                       <div className="mt-4 flex flex-wrap gap-2">
@@ -768,7 +768,7 @@ export default function AnimeDetailPage({ params }: { params: { id: string } }) 
                           <Link
                             key={`${cv}-${index}`}
                             href={`/anime?cast=${encodeURIComponent(cv)}`}
-                            className="surface-pill rounded-full px-3 py-1.5 text-xs text-zinc-200 transition hover:border-cyan-300/30 hover:bg-cyan-300/10 hover:text-cyan-100"
+                            className="theme-secondary-soft rounded-full px-3 py-1.5 text-xs transition"
                           >
                             {cv}
                           </Link>

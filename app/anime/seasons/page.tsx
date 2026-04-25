@@ -235,12 +235,12 @@ export default function AnimeSeasonsPage() {
             </div>
             <div className="surface-card rounded-[24px] p-4">
               <div className="text-[10px] uppercase tracking-[0.28em] text-zinc-500">Started</div>
-              <div className="mt-2 text-2xl font-mono text-cyan-300">{startedCount}</div>
+              <div className="theme-secondary-text mt-2 text-2xl font-mono">{startedCount}</div>
               <div className="text-xs text-zinc-500 mt-1">已经开始追过的作品</div>
             </div>
             <div className="surface-card rounded-[24px] p-4">
               <div className="text-[10px] uppercase tracking-[0.28em] text-zinc-500">Completed</div>
-              <div className="mt-2 text-2xl font-mono text-emerald-300">{completedCount}</div>
+              <div className="theme-accent-text mt-2 text-2xl font-mono">{completedCount}</div>
               <div className="text-xs text-zinc-500 mt-1">你已经看完的作品</div>
             </div>
             <div className="surface-card rounded-[24px] p-4">
@@ -263,9 +263,9 @@ export default function AnimeSeasonsPage() {
                 </div>
                 <div className="flex flex-wrap items-center gap-2.5">
                   <span className="surface-pill rounded-full px-4 py-2 text-sm text-zinc-300">入库 {bucket.count} 部</span>
-                  <span className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100">已开始追番 {bucket.started} 部</span>
-                  <span className="rounded-full border border-emerald-300/20 bg-emerald-300/10 px-4 py-2 text-sm text-emerald-100">已看完 {bucket.completed} 部</span>
-                  <span className="rounded-full border border-amber-300/20 bg-amber-300/10 px-4 py-2 text-sm text-amber-100">追番中 {bucket.watching} 部</span>
+                  <span className="theme-secondary-soft rounded-full px-4 py-2 text-sm">已开始追番 {bucket.started} 部</span>
+                  <span className="theme-accent-soft rounded-full px-4 py-2 text-sm">已看完 {bucket.completed} 部</span>
+                  <span className="theme-warm-soft rounded-full px-4 py-2 text-sm">追番中 {bucket.watching} 部</span>
                 </div>
               </div>
 

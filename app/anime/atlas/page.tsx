@@ -129,7 +129,7 @@ function AtlasTagBarList({ data }: { data: TagRow[] }) {
         <Link
           key={item.tag}
           href={`/anime?tag=${encodeURIComponent(item.tag)}`}
-          className="group block surface-card-muted rounded-[24px] px-4 py-4 transition-all duration-300 hover:border-cyan-300/25 hover:bg-white/[0.05] lg:px-5"
+          className="theme-secondary-hover-card group block surface-card-muted rounded-[24px] px-4 py-4 transition-all duration-300 hover:bg-white/[0.05] lg:px-5"
         >
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-5">
             <div className="flex min-w-0 items-center gap-3 lg:w-[250px] lg:shrink-0">
@@ -139,7 +139,7 @@ function AtlasTagBarList({ data }: { data: TagRow[] }) {
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="truncate text-sm text-zinc-100">{item.tag}</span>
-                  <ArrowUpRightIcon className="h-3.5 w-3.5 shrink-0 text-zinc-600 transition-colors group-hover:text-cyan-300" />
+                  <ArrowUpRightIcon className="theme-secondary-hover-text h-3.5 w-3.5 shrink-0 text-zinc-600 transition-colors" />
                 </div>
                 <div className="mt-1 text-xs text-zinc-500">覆盖 {item.percentage}% · 点击筛选该标签</div>
               </div>
@@ -147,7 +147,7 @@ function AtlasTagBarList({ data }: { data: TagRow[] }) {
             <div className="min-w-0 flex-1">
               <div className="h-3 overflow-hidden rounded-full bg-white/[0.05]">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-cyan-300 via-sky-300 to-emerald-300 transition-all duration-500"
+                  className="theme-spectrum-gradient h-full rounded-full transition-all duration-500"
                   style={{ width: getRelativeBarWidth(item.count, maxValue) }}
                 />
               </div>
@@ -248,10 +248,10 @@ export default function AnimeAtlasPage() {
 
   return (
     <main className="p-4 lg:p-8 pb-24 space-y-6 lg:space-y-8 animate-fade-in relative">
-      <div className="absolute inset-0 pointer-events-none opacity-40 bg-[radial-gradient(circle_at_top_left,rgba(86,211,156,0.08),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(93,214,242,0.08),transparent_26%)]" />
+      <div className="theme-atlas-aura absolute inset-0 pointer-events-none opacity-40" />
 
       <section className="glass-panel-strong rounded-[36px] p-8 lg:p-10 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.05),transparent_35%),linear-gradient(135deg,rgba(86,211,156,0.1),transparent_42%,rgba(93,214,242,0.08))]" />
+        <div className="theme-atlas-hero-aura absolute inset-0" />
         <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-4 max-w-3xl">
             <Link href="/" className="inline-flex items-center gap-1 text-zinc-400 hover:text-white text-sm transition-colors">
@@ -270,7 +270,7 @@ export default function AnimeAtlasPage() {
             </div>
             <div className="surface-card rounded-[24px] p-4">
               <div className="text-[10px] uppercase tracking-[0.28em] text-zinc-500">Richness</div>
-              <div className="mt-2 text-2xl font-mono text-emerald-300">{data.metadataRichness}%</div>
+              <div className="theme-accent-text mt-2 text-2xl font-mono">{data.metadataRichness}%</div>
               <div className="text-xs text-zinc-500 mt-1">档案完整度</div>
             </div>
           </div>
@@ -281,7 +281,7 @@ export default function AnimeAtlasPage() {
         <div className="glass-panel rounded-[32px] p-6 lg:p-7">
           <div className="flex flex-col gap-4 border-b border-white/6 pb-5 md:flex-row md:items-end md:justify-between">
             <div className="flex items-center gap-3">
-              <SparklesIcon className="w-5 h-5 text-emerald-300" />
+              <SparklesIcon className="theme-accent-text w-5 h-5" />
               <div>
                 <h2 className="text-xl font-display font-semibold text-zinc-100">集数分布</h2>
                 <p className="mt-1 text-sm text-zinc-500">改为全宽横向条形图，直接比较各集数区间的体量差。</p>
@@ -306,7 +306,7 @@ export default function AnimeAtlasPage() {
         <div className="glass-panel rounded-[32px] p-6 lg:p-7">
           <div className="flex flex-col gap-4 border-b border-white/6 pb-5 md:flex-row md:items-end md:justify-between">
             <div className="flex items-center gap-3">
-              <TagIcon className="w-5 h-5 text-cyan-300" />
+              <TagIcon className="theme-secondary-text w-5 h-5" />
               <div>
                 <h2 className="text-xl font-display font-semibold text-zinc-100">标签排行</h2>
                 <p className="mt-1 text-sm text-zinc-500">横向拉满主容器，每个标签都可以直接跳到番剧列表筛选。</p>
@@ -327,7 +327,7 @@ export default function AnimeAtlasPage() {
               </div>
               <Link
                 href={dominantTag ? `/anime?tag=${encodeURIComponent(dominantTag.tag)}` : '/anime'}
-                className="inline-flex items-center gap-1.5 text-cyan-200 transition-colors hover:text-cyan-100"
+                className="theme-secondary-text inline-flex items-center gap-1.5 transition-colors hover:text-white"
               >
                 查看标签作品
                 <ArrowUpRightIcon className="h-4 w-4" />
@@ -343,7 +343,7 @@ export default function AnimeAtlasPage() {
                 <Link
                   key={tag.tag}
                   href={`/anime?tag=${encodeURIComponent(tag.tag)}`}
-                  className="text-zinc-400 transition-colors hover:text-cyan-200"
+                  className="text-zinc-400 transition-colors theme-secondary-hover-text"
                 >
                   #{tag.tag}
                 </Link>

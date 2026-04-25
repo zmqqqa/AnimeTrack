@@ -96,7 +96,7 @@ export default function AnimePagination({
             value={pageInput}
             onChange={(event) => setPageInput(event.target.value)}
             onBlur={jumpToPage}
-            className="surface-input w-16 rounded-lg px-2 py-1.5 text-center text-xs text-zinc-200 outline-none focus:border-cyan-500/40"
+            className="surface-input theme-focus-accent w-16 rounded-lg px-2 py-1.5 text-center text-xs text-zinc-200 outline-none"
           />
           <span>页</span>
         </form>

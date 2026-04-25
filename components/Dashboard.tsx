@@ -13,8 +13,10 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAnimeData } from '@/hooks/useAnimeData';
 import { useHistoryData } from '@/hooks/useHistoryData';
+import { useTheme } from '@/components/theme/ThemeProvider';
 import { AnimeRecord } from '@/lib/dashboard-types';
 import { formatPremiere, formatUpdateDate, formatWatchMoment } from '@/lib/formatters';
+import { getAppThemeDefinition } from '@/lib/theme';
 import DashboardHeader from './dashboard/DashboardHeader';
 import LazyRender from './shared/LazyRender';
 
@@ -22,9 +24,10 @@ import LazyRender from './shared/LazyRender';
 const YearBarChart = dynamic(() => import('./dashboard/YearBarChart').then(mod => mod.YearBarChart), { ssr: false });
 const ActivityFeed = dynamic(() => import('./dashboard/ActivityFeed'), { ssr: false });
 const AdvancedActivityStats = dynamic(() => import('./dashboard/AdvancedActivityStats'), { ssr: false });
-const PREMIERE_PALETTE = ['#5dd6f2', '#56d39c', '#8da6ff', '#f4bf62', '#fb7185', '#a78bfa', '#f97316'] as const;
 
 export default function Dashboard() {
+    const { theme } = useTheme();
+    const themeDefinition = getAppThemeDefinition(theme);
     const { parsedHistory, isLoading: hLoading, isRefreshing: hRefreshing } = useHistoryData();
     const {
         animeList,
@@ -56,7 +59,7 @@ export default function Dashboard() {
             value: animeStats.count.toString(),
             unit: '部',
             icon: TvIcon,
-            color: 'text-emerald-300',
+            color: 'theme-accent-text',
             href: '/anime',
         },
         {
@@ -81,7 +84,7 @@ export default function Dashboard() {
             unit: '小时',
             prefix: '约',
             icon: ArrowTrendingUpIcon,
-            color: 'text-cyan-300',
+            color: 'theme-secondary-text',
         },
     ];
 
@@ -124,7 +127,7 @@ export default function Dashboard() {
 
     const heroStyle = heroAnime?.coverUrl
         ? {
-            backgroundImage: `linear-gradient(120deg, rgba(6,13,12,0.88), rgba(6,13,12,0.4) 44%, rgba(6,13,12,0.88)), url(${heroAnime.coverUrl})`,
+            backgroundImage: `${themeDefinition.heroOverlay}, url(${heroAnime.coverUrl})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
         }
@@ -185,9 +188,9 @@ export default function Dashboard() {
         () => premiereByYear.map((item, i) => ({
             label: `${item.year} 年`,
             value: item.count,
-            color: PREMIERE_PALETTE[i % PREMIERE_PALETTE.length],
+            color: themeDefinition.premierePalette[i % themeDefinition.premierePalette.length],
         })),
-        [premiereByYear]
+        [premiereByYear, themeDefinition]
     );
 
     const tagBarData = useMemo(() => animeTagStats.slice(0, 8), [animeTagStats]);
@@ -196,7 +199,7 @@ export default function Dashboard() {
     return (
         <div className="p-4 lg:p-8 space-y-4 lg:space-y-6 animate-fade-in pb-20 relative">
             <div className="absolute inset-0 pointer-events-none opacity-[0.04] mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
-            <div className="absolute inset-0 pointer-events-none opacity-40 bg-[radial-gradient(circle_at_5%_5%,rgba(86,211,156,0.12),transparent_32%),radial-gradient(circle_at_100%_0%,rgba(93,214,242,0.12),transparent_34%),radial-gradient(circle_at_80%_100%,rgba(244,191,98,0.08),transparent_30%)]" />
+            <div className="theme-dashboard-aura absolute inset-0 pointer-events-none opacity-40" />
 
             <DashboardHeader isLoading={isLoading} isRefreshing={isRefreshing} />
 
@@ -221,11 +224,11 @@ export default function Dashboard() {
                                 </div>
                                 <div className="surface-card rounded-[20px] px-4 py-3">
                                     <div className="text-[10px] uppercase tracking-[0.26em] text-zinc-500">档案完整度</div>
-                                    <div className="mt-1 text-2xl font-mono text-emerald-300">{metadataRichness}%</div>
+                                    <div className="theme-accent-text mt-1 text-2xl font-mono">{metadataRichness}%</div>
                                 </div>
                                 <div className="surface-card rounded-[20px] px-4 py-3">
                                     <div className="text-[10px] uppercase tracking-[0.26em] text-zinc-500">完结率</div>
-                                    <div className="mt-1 text-2xl font-mono text-cyan-300">{animeCompletionRate}%</div>
+                                    <div className="theme-secondary-text mt-1 text-2xl font-mono">{animeCompletionRate}%</div>
                                 </div>
                                 <div className="surface-card rounded-[20px] px-4 py-3">
                                     <div className="text-[10px] uppercase tracking-[0.26em] text-zinc-500">本周观看</div>
@@ -234,10 +237,10 @@ export default function Dashboard() {
                             </div>
 
                             <div className="flex flex-wrap items-center gap-3 pt-1">
-                                <Link href="/anime" className="surface-pill rounded-full px-4 py-2 text-sm text-zinc-100 hover:border-emerald-300/30 hover:bg-emerald-300/10 transition-all">
+                                <Link href="/anime" className="theme-accent-soft rounded-full px-4 py-2 text-sm transition-all">
                                     进入片库
                                 </Link>
-                                <Link href="/anime/atlas" className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-sm text-cyan-100 hover:bg-cyan-300/15 transition-all">
+                                <Link href="/anime/atlas" className="theme-secondary-soft rounded-full px-4 py-2 text-sm transition-all">
                                     打开图谱馆
                                 </Link>
                                 <Link href="/anime/seasons" className="rounded-full border border-amber-300/20 bg-amber-300/10 px-4 py-2 text-sm text-amber-100 hover:bg-amber-300/15 transition-all">
@@ -429,7 +432,7 @@ export default function Dashboard() {
                     <LazyRender fallback={<div className="glass-panel rounded-[32px] h-64 animate-pulse" />}>
                         <div className="glass-panel p-5 rounded-[28px] space-y-4">
                             <div className="flex items-center gap-2">
-                                <SparklesIcon className="w-4 h-4 text-emerald-300" />
+                                <SparklesIcon className="theme-accent-text w-4 h-4" />
                                 <h2 className="text-sm font-bold uppercase tracking-widest text-zinc-300">元数据完整度</h2>
                             </div>
                             <div className="space-y-2.5">
@@ -441,16 +444,16 @@ export default function Dashboard() {
                                         </div>
                                         <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
                                             <div
-                                                className="h-full rounded-full bg-gradient-to-r from-emerald-300 to-cyan-300"
+                                                className="theme-accent-gradient h-full rounded-full"
                                                 style={{ width: `${item.percent}%` }}
                                             />
                                         </div>
                                     </div>
                                 ))}
                             </div>
-                            <div className="rounded-[18px] border border-emerald-300/15 bg-emerald-300/10 p-3">
-                                <div className="text-[10px] text-emerald-100/80">完整度指数</div>
-                                <div className="mt-1.5 text-xl font-mono text-emerald-100">{metadataRichness}%</div>
+                            <div className="theme-accent-soft rounded-[18px] p-3">
+                                <div className="theme-accent-text-muted text-[10px]">完整度指数</div>
+                                <div className="theme-accent-text mt-1.5 text-xl font-mono">{metadataRichness}%</div>
                                 <p className="mt-1 text-xs text-zinc-300 leading-5">具备 4 项以上核心字段的作品占比。值越高，图谱页和首页越完整。</p>
                             </div>
                         </div>
@@ -458,7 +461,7 @@ export default function Dashboard() {
 
                     <div className="glass-panel p-6 lg:p-7 rounded-[32px]">
                         <h2 className="text-sm font-bold uppercase tracking-widest text-zinc-400 flex items-center gap-2 mb-5">
-                            <span className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.6)]" />
+                            <span className="theme-switch-dot h-2 w-2 rounded-full" />
                             观看统计与偏好
                         </h2>
 
@@ -477,7 +480,7 @@ export default function Dashboard() {
                                         </div>
                                         <div className="mt-1.5 h-1.5 w-full bg-white/6 rounded-full overflow-hidden">
                                             <div
-                                                className="h-full rounded-full bg-gradient-to-r from-emerald-300 to-cyan-300 transition-all duration-300"
+                                                className="theme-accent-gradient h-full rounded-full transition-all duration-300"
                                                 style={{ width: `${(item.count / tagBarMax) * 100}%` }}
                                             />
                                         </div>
